@@ -36,6 +36,11 @@ enum IntegrationType {
   GITHUB
 }
 
+enum BillingProvider {
+  STRIPE
+  FLUTTERWAVE
+}
+
 model User {
   id           String       @id @default(cuid())
   email        String       @unique
@@ -47,17 +52,19 @@ model User {
 }
 
 model Team {
-  id                    String       @id @default(cuid())
-  name                  String
-  slug                  String       @unique
-  plan                  Plan         @default(FREE)
-  stripeCustomerId      String?      @unique
-  stripeSubscriptionId  String?
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
-  members               TeamMember[]
-  projects              Project[]
-  apiKeys               ApiKey[]
+  id                   String           @id @default(cuid())
+  name                 String
+  slug                 String           @unique
+  plan                 Plan             @default(FREE)
+  billingProvider      BillingProvider?
+  stripeCustomerId     String?          @unique
+  stripeSubscriptionId String?
+  flutterwaveTxRef     String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  members              TeamMember[]
+  projects             Project[]
+  apiKeys              ApiKey[]
 }
 
 model TeamMember {
