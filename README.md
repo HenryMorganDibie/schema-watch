@@ -1,12 +1,48 @@
 # Schema-Watch
 
-Live API contract monitoring. Point your frontend's dev server at a local
-proxy instead of your real backend; the moment a field's type, presence, or
-nullability changes, you get a dashboard alert that names the exact field -
-and which of your own frontend files reference it.
+Live API contract monitoring. Point your frontend at a local proxy instead of
+your real backend, and the moment a field's type, presence, or nullability
+changes you get an alert naming the exact field and which of your own frontend
+files reference it.
 
 Full system design, database schema, API surface, and UI architecture are in
-[`ARCHITECTURE.md`](./ARCHITECTURE.md). This file is just "how do I run it."
+[`ARCHITECTURE.md`](./ARCHITECTURE.md).
+
+## See it working in 30 seconds
+
+```bash
+npm install
+npm run build
+npm run demo
+```
+
+Then open **<http://localhost:4561>**.
+
+The demo starts a mock backend serving a stable contract, points the agent at
+it, and drives traffic. About ten seconds in, the mock backend "ships a
+breaking change" and four alerts land live while you watch:
+
+| Endpoint | Change | Verdict |
+| --- | --- | --- |
+| `GET /api/users/:id` | `userId` string to number | Breaking, 3 files affected |
+| `GET /api/orders/:id` | `total` number to string | Breaking, 2 files affected |
+| `GET /api/session` | `user` object to null | Breaking |
+| `GET /api/projects` | `items[].archived` added | Safe |
+
+That last row is the point. Values jitter on every single request in the demo
+and nothing fires; only real shape changes do. A tool that flags every changed
+timestamp is worse than no tool.
+
+## Why it doesn't spam you
+
+It diffs the **shape** of each payload (type, optionality, nullability), never
+the values. Severity is context-aware: a new required field is breaking in a
+*request* body but harmless in a *response* body, and a response field that
+quietly becomes optional is breaking even though nothing was removed.
+
+Those rules are pinned down as executable tests in
+[`packages/core/src/diff.test.ts`](./packages/core/src/diff.test.ts) - read that
+file to understand the product's behavior faster than reading the code.
 
 ## Repo layout
 
@@ -16,71 +52,93 @@ packages/
   agent/       local reverse proxy + SQLite + REST/WS API + CLI (`schema-watch`)
   dashboard/   React + Vite live UI, served by the agent
   server/      cloud backend - accounts, teams, billing, CI gate, Slack, badge
-examples/      copy-pasteable GitHub Action for the CI gate
+examples/
+  demo/          the one-command demo above
+  github-action/ copy-pasteable CI gate workflow
 extension/     phase-2 Chrome DevTools panel (design notes only, not built)
 ```
 
-## Why it doesn't spam you
-
-It diffs the *shape* of each payload (type, optionality, nullability), not the
-values. A response whose `createdAt` changes every request never fires an
-alert; a response whose `userId` goes `string` to `number` fires immediately.
-That distinction is the whole product, and it's pinned down by the tests in
-`packages/core/src/diff.test.ts`.
-
-## Run it locally (free tier - no account, no cloud)
+## Use it on your own project
 
 ```bash
-npm install
-npm run build --workspace packages/core   # dashboard/agent import its compiled types
-
-# Point it at whatever backend your frontend normally talks to:
-cd packages/agent
-node dist/cli.js init --target http://localhost:3001
-node dist/cli.js start
+cd your-project
+node path/to/schema-watch/packages/agent/dist/cli.js init --target http://localhost:3001
+node path/to/schema-watch/packages/agent/dist/cli.js start
 ```
 
-This starts:
+Then change your frontend's API base URL from `http://localhost:3001` to
+`http://localhost:4560` and work normally. The dashboard is on
+`http://localhost:4561`.
 
-- the proxy on `http://localhost:4560` - point your frontend's API base URL here instead of `http://localhost:3001`
-- the dashboard + API on `http://localhost:4561`
+To get the "N files reference this endpoint" feature, set `frontendSrcDir` in
+the generated `schema-watch.config.json` to your app's `src/` folder.
 
-For dashboard hot-reload during development, run the agent (above) and the
-Vite dev server side by side:
+For dashboard hot-reload while developing Schema-Watch itself:
 
 ```bash
-npm run dev:agent       # from repo root - proxy :4560, API :4561
-npm run dev:dashboard   # repo root - Vite :5173, proxies /api and /ws to :4561
+npm run dev:agent       # proxy :4560, API :4561
+npm run dev:dashboard   # Vite :5173, proxies /api and /ws to :4561
 ```
 
-Open `http://localhost:5173`, hit `⌘K` to jump to any endpoint, and use your
-app through the proxy as normal. Nothing shows up until a contract actually
-changes - flip a field's type in your backend's mock data to see it fire.
+## Cloud backend (optional)
 
-To get the "N files reference this endpoint" feature, add `frontendSrcDir` to
-`schema-watch.config.json` pointing at your app's `src/` folder.
-
-## Run the cloud backend (Pro/Team features)
+The free tier is fully local and needs no account. The cloud backend adds
+history, team dashboards, Slack alerts, the CI gate, and the status badge.
 
 ```bash
-cp .env.example .env   # fill in JWT_SECRET at minimum; Stripe keys only needed for billing
-docker compose up -d   # local Postgres
+cp .env.example .env    # JWT_SECRET is the only required value
+docker compose up -d    # Postgres
 cd packages/server
-npm run db:migrate
-npm run dev             # listens on :4000
+npm run db:migrate      # creates the schema (no migration is committed yet)
+npm run dev             # :4000
 ```
 
-Then in the agent's `schema-watch.config.json`, set `sync.enabled: true` with
-an API key minted via `POST /api/teams/:teamId/api-keys` (after signing up
-through `/api/auth/signup` and creating a team).
+### Payments
+
+Both processors are optional and independent; the server boots fine with
+neither configured, and `GET /api/billing/providers` reports what a given
+deployment can actually collect with.
+
+- **Flutterwave** - NGN and other African currencies, cards, bank transfer,
+  USSD. Required if the selling entity is Nigerian, since Stripe does not
+  onboard Nigerian businesses.
+- **Stripe** - cards/USD internationally.
+
+Plan prices live in [`packages/server/src/lib/pricing.ts`](./packages/server/src/lib/pricing.ts).
+That table is a security boundary, not display copy: webhooks check the amount
+actually paid against it before granting a plan, and Flutterwave transactions
+are re-verified against Flutterwave's API rather than trusted from the webhook
+body.
 
 ## Tests
 
 ```bash
 npm run test --workspace packages/core
+npm run typecheck --workspaces
 ```
 
-The diff engine's rules (what counts as breaking vs. safe, and why it differs
-between request and response bodies) are documented as executable tests in
-`packages/core/src/diff.test.ts` - read that file if you want to understand
-the product's actual behavior faster than reading the implementation.
+## Status: what is and is not built
+
+Working and verified end to end:
+
+- Proxy capture, shape inference, diffing, severity rules (13 unit tests)
+- Local dashboard: live WebSocket feed, diff viewer, command palette, dark/light
+- Affected-file detection
+- Cloud backend routes: auth, teams, API keys, projects, snapshots, CI check,
+  integrations, badge, Flutterwave + Stripe billing (typechecked, boots, routes
+  exercised by hand)
+
+Not built yet, and needed before this can be sold:
+
+- **No cloud frontend.** There is no signup, login, or billing UI anywhere. The
+  dashboard talks only to the local agent, so a paying customer currently has no
+  way to create an account.
+- **No deployment.** Nothing is hosted; `api.schema-watch.dev` does not exist.
+- **No committed Prisma migration**, so the Postgres schema has never been
+  created or run against a real database.
+- **The CI gate is incomplete.** `POST /api/ci/check` works, but no command
+  exports the `contract.json` the example workflow feeds it.
+- **Payments are untested against live processors.** No Flutterwave or Stripe
+  account, plan, or webhook has been exercised with real credentials.
+- Gzip/brotli response bodies pass through correctly but are skipped for
+  diffing. Only tested on Windows and Node 24.

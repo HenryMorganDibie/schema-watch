@@ -6,7 +6,8 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "demo": "node examples/demo/run-demo.mjs",
+    "build": "npm run build --workspaces --if-present && npm run bundle --workspace packages/agent",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "dev:agent": "npm run dev --workspace packages/agent",
     "dev:dashboard": "npm run dev --workspace packages/dashboard",
