@@ -9,3 +9,6 @@ build/
 .DS_Store
 dashboard-dist/
 chrome-profile/
+*.db-shm
+*.db-wal
+schema-watch.config.json
