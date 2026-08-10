@@ -1,0 +1,170 @@
+/* Schema-Watch design tokens.
+   Dark-first (this is a tool developers keep open in a side monitor all day -
+   Linear/Vercel/GitHub dark all make the same call). Light tokens defined on
+   bare :root; dark overrides under both the OS media query and a manual
+   [data-theme] toggle so either can win. */
+
+:root {
+  color-scheme: light;
+
+  --bg-page: #f9f9f7;
+  --bg-surface: #fcfcfb;
+  --bg-surface-raised: #ffffff;
+  --bg-inset: #f1f1ee;
+
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+
+  --border: rgba(11, 11, 11, 0.1);
+  --border-strong: rgba(11, 11, 11, 0.18);
+  --gridline: #e1e0d9;
+
+  --accent: #2a78d6;
+  --accent-ink: #ffffff;
+  --accent-soft-bg: rgba(42, 120, 214, 0.1);
+  --accent-soft-border: rgba(42, 120, 214, 0.28);
+
+  --breaking: #d03b3b;
+  --breaking-soft-bg: rgba(208, 59, 59, 0.1);
+  --breaking-soft-border: rgba(208, 59, 59, 0.32);
+
+  --warning: #d98300;
+  --warning-soft-bg: rgba(250, 178, 25, 0.16);
+  --warning-soft-border: rgba(217, 131, 0, 0.36);
+
+  --info: #0ca30c;
+  --info-soft-bg: rgba(12, 163, 12, 0.1);
+  --info-soft-border: rgba(12, 163, 12, 0.3);
+
+  --shadow-panel: 0 1px 2px rgba(11, 11, 11, 0.04), 0 8px 24px rgba(11, 11, 11, 0.06);
+  --shadow-overlay: 0 20px 60px rgba(11, 11, 11, 0.28);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg-page: #0d0d0d;
+    --bg-surface: #1a1a19;
+    --bg-surface-raised: #202220;
+    --bg-inset: #161615;
+
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.18);
+    --gridline: #2c2c2a;
+
+    --accent: #3987e5;
+    --accent-soft-bg: rgba(57, 135, 229, 0.16);
+    --accent-soft-border: rgba(57, 135, 229, 0.36);
+
+    --breaking: #e66767;
+    --breaking-soft-bg: rgba(230, 103, 103, 0.16);
+    --breaking-soft-border: rgba(230, 103, 103, 0.4);
+
+    --warning: #fab219;
+    --warning-soft-bg: rgba(250, 178, 25, 0.16);
+    --warning-soft-border: rgba(250, 178, 25, 0.4);
+
+    --info: #3fc23f;
+    --info-soft-bg: rgba(63, 194, 63, 0.16);
+    --info-soft-border: rgba(63, 194, 63, 0.4);
+
+    --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.4);
+    --shadow-overlay: 0 24px 70px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-page: #0d0d0d;
+  --bg-surface: #1a1a19;
+  --bg-surface-raised: #202220;
+  --bg-inset: #161615;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --gridline: #2c2c2a;
+  --accent: #3987e5;
+  --accent-soft-bg: rgba(57, 135, 229, 0.16);
+  --accent-soft-border: rgba(57, 135, 229, 0.36);
+  --breaking: #e66767;
+  --breaking-soft-bg: rgba(230, 103, 103, 0.16);
+  --breaking-soft-border: rgba(230, 103, 103, 0.4);
+  --warning: #fab219;
+  --warning-soft-bg: rgba(250, 178, 25, 0.16);
+  --warning-soft-border: rgba(250, 178, 25, 0.4);
+  --info: #3fc23f;
+  --info-soft-bg: rgba(63, 194, 63, 0.16);
+  --info-soft-border: rgba(63, 194, 63, 0.4);
+  --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.4);
+  --shadow-overlay: 0 24px 70px rgba(0, 0, 0, 0.6);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+code,
+.mono {
+  font-family: var(--font-mono);
+}
+
+::selection {
+  background: var(--accent-soft-border);
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--accent-soft-border);
+  }
+  100% {
+    box-shadow: 0 0 0 6px rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

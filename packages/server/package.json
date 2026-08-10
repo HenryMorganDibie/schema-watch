@@ -1,0 +1,29 @@
+{
+  "name": "@schema-watch/server",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@prisma/client": "^5.20.0",
+    "@schema-watch/core": "*",
+    "bcryptjs": "^2.4.3",
+    "fastify": "^5.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "stripe": "^17.1.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.7.5",
+    "prisma": "^5.20.0",
+    "typescript": "^5.6.3"
+  }
+}

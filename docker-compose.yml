@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: schema_watch
+      POSTGRES_PASSWORD: schema_watch
+      POSTGRES_DB: schema_watch
+    ports:
+      - "5432:5432"
+    volumes:
+      - schema_watch_pg:/var/lib/postgresql/data
+
+volumes:
+  schema_watch_pg:

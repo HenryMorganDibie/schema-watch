@@ -1,0 +1,57 @@
+# Blocks a PR when the API contract breaks.
+#
+# Drop this into .github/workflows/ in the repo you want gated, set the
+# SCHEMA_WATCH_API_KEY secret (mint one via POST /api/teams/:teamId/api-keys)
+# and the SCHEMA_WATCH_PROJECT_ID variable, then mark "contract-check" as a
+# required status check in branch protection.
+#
+# The step that matters is the last one: it POSTs the contract observed in
+# this branch to /api/ci/check and exits non-zero when the response says a
+# breaking change slipped in.
+
+name: API contract
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  contract-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Run whatever exercises your API and writes the observed contract to
+      # contract.json. The simplest version: run the agent's proxy in front
+      # of your test server during the integration suite, then export.
+      - name: Capture contract
+        run: npm run test:integration
+
+      - name: Check for breaking contract changes
+        env:
+          SCHEMA_WATCH_API_KEY: ${{ secrets.SCHEMA_WATCH_API_KEY }}
+          SCHEMA_WATCH_PROJECT_ID: ${{ vars.SCHEMA_WATCH_PROJECT_ID }}
+        run: |
+          RESPONSE=$(curl -sS -X POST "https://api.schema-watch.dev/api/ci/check" \
+            -H "content-type: application/json" \
+            -H "x-api-key: $SCHEMA_WATCH_API_KEY" \
+            -d "$(jq -c --arg pid "$SCHEMA_WATCH_PROJECT_ID" \
+                  '{projectId: $pid, entries: .}' contract.json)")
+
+          echo "$RESPONSE" | jq .
+
+          if [ "$(echo "$RESPONSE" | jq -r '.pass')" != "true" ]; then
+            echo "::error::Breaking API contract change detected"
+            echo "$RESPONSE" | jq -r '.breakingChanges[].changes[] | "  \(.path): \(.before) -> \(.after)"'
+            exit 1
+          fi
+
+          echo "No breaking contract changes."

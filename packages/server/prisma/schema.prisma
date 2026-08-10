@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  PRO
+  TEAM
+}
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum BodyTarget {
+  REQUEST
+  RESPONSE
+}
+
+enum ChangeSeverity {
+  BREAKING
+  WARNING
+  INFO
+}
+
+enum IntegrationType {
+  SLACK
+  DISCORD
+  GITHUB
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  TeamMember[]
+}
+
+model Team {
+  id                    String       @id @default(cuid())
+  name                  String
+  slug                  String       @unique
+  plan                  Plan         @default(FREE)
+  stripeCustomerId      String?      @unique
+  stripeSubscriptionId  String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  members               TeamMember[]
+  projects              Project[]
+  apiKeys               ApiKey[]
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  role      TeamRole @default(MEMBER)
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, userId])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  keyHash    String    @unique
+  label      String
+  team       Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId     String
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model Project {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String
+  team         Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId       String
+  createdAt    DateTime      @default(now())
+  endpoints    Endpoint[]
+  integrations Integration[]
+
+  @@unique([teamId, slug])
+}
+
+model Endpoint {
+  id          String           @id @default(cuid())
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  method      String
+  pathPattern String
+  createdAt   DateTime         @default(now())
+  snapshots   SchemaSnapshot[]
+  changes     ContractChange[]
+
+  @@unique([projectId, method, pathPattern])
+}
+
+model SchemaSnapshot {
+  id         String     @id @default(cuid())
+  endpoint   Endpoint   @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  endpointId String
+  target     BodyTarget
+  statusCode Int?
+  schema     Json
+  hash       String
+  createdAt  DateTime   @default(now())
+
+  @@index([endpointId, target, createdAt])
+}
+
+model ContractChange {
+  id             String         @id @default(cuid())
+  endpoint       Endpoint       @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  endpointId     String
+  severity       ChangeSeverity
+  target         BodyTarget
+  summary        String
+  changes        Json
+  affectedFiles  Json           @default("[]")
+  fromSnapshotId String?
+  toSnapshotId   String?
+  acknowledged   Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+
+  @@index([endpointId, createdAt])
+}
+
+model Integration {
+  id        String          @id @default(cuid())
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  type      IntegrationType
+  config    Json
+  createdAt DateTime        @default(now())
+}
