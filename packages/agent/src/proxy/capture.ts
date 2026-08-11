@@ -54,15 +54,31 @@ function processTarget(
   if (previous && previous.hash === hash) return; // hot path: identical shape, nothing to do
 
   const snapshot = insertSnapshot(db, { endpointId, target, statusCode, schema, hash });
+  const affectedFiles = config.frontendSrcDir ? findAffectedFiles(config.frontendSrcDir, pathPattern) : [];
 
-  if (!previous) return; // first time we've ever seen this endpoint/target - nothing to diff against yet
+  // Every stored snapshot is pushed, including the very first one. The cloud
+  // runs its own diff, so it needs the baseline too: pushing only when a local
+  // change is detected leaves the server with nothing to compare against and
+  // it records no changes at all.
+  if (config.sync.enabled) {
+    pushCloudSnapshot(config, {
+      method,
+      pathPattern,
+      target,
+      statusCode,
+      schema,
+      previousHash: previous?.hash ?? "",
+      affectedFiles,
+    });
+  }
+
+  if (!previous) return; // first time we've seen this endpoint/target - nothing local to diff yet
 
   const previousSchema = JSON.parse(previous.schema_json);
   const changes = diffSchemas(previousSchema, schema, target);
   if (changes.length === 0) return;
 
   const severity = worstSeverity(changes)!;
-  const affectedFiles = config.frontendSrcDir ? findAffectedFiles(config.frontendSrcDir, pathPattern) : [];
 
   const changeRow = insertChange(db, {
     endpointId,
@@ -75,8 +91,4 @@ function processTarget(
   });
 
   agentEvents.emitChange({ ...changeRow, method, path_pattern: pathPattern });
-
-  if (config.sync.enabled) {
-    pushCloudSnapshot(config, { method, pathPattern, target, statusCode, schema, previousHash: previous.hash, affectedFiles });
-  }
 }

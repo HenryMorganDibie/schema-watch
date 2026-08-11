@@ -54,7 +54,17 @@ writeFileSync(
       apiPort: DASHBOARD_PORT,
       dbPath: path.join(workdir, "demo.db"),
       frontendSrcDir: frontendSrc,
-      sync: { enabled: false },
+      // Set SCHEMA_WATCH_SYNC_API_KEY and SCHEMA_WATCH_SYNC_PROJECT_ID to also
+      // push the demo's contract changes to a cloud project, so the same run
+      // populates both the local dashboard and the cloud app.
+      sync: process.env.SCHEMA_WATCH_SYNC_API_KEY
+        ? {
+            enabled: true,
+            apiKey: process.env.SCHEMA_WATCH_SYNC_API_KEY,
+            projectId: process.env.SCHEMA_WATCH_SYNC_PROJECT_ID,
+            cloudUrl: process.env.SCHEMA_WATCH_CLOUD_URL ?? "http://localhost:4000",
+          }
+        : { enabled: false },
     },
     null,
     2,
