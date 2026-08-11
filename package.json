@@ -14,7 +14,9 @@
     "dev:server": "npm run dev --workspace packages/server",
     "db:migrate": "npm run db:migrate --workspace packages/server",
     "db:generate": "npm run db:generate --workspace packages/server",
-    "dev:web": "npm run dev --workspace packages/web"
+    "dev:web": "npm run dev --workspace packages/web",
+    "vercel:web": "npm run build --workspace packages/core && npm run build --workspace packages/web",
+    "vercel:server": "npm run build --workspace packages/core && npm run db:generate --workspace packages/server && npm run build --workspace packages/server"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
