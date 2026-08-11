@@ -4,7 +4,14 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Runtime connections go through a pooler (Supabase pgbouncer on :6543).
+  // Serverless functions open a connection per invocation, which exhausts a
+  // direct Postgres connection limit almost immediately.
+  url = env("DATABASE_URL")
+  // Migrations need a direct connection (:5432); pgbouncer cannot run DDL in
+  // transaction mode. Falls back to DATABASE_URL when unset, so a plain local
+  // Postgres still works with a single variable.
+  directUrl = env("DIRECT_URL")
 }
 
 enum Plan {
