@@ -1,19 +1,17 @@
 import { useEffect, useState } from "react";
+import { DiffViewer, Logo, type ContractChangeView, type EndpointView } from "@schema-watch/ui";
 import { CommandPalette } from "./components/CommandPalette";
-import { DiffViewer } from "./components/DiffViewer";
 import { EndpointList } from "./components/EndpointList";
-import { Logo } from "./components/Logo";
 import { StatusPulse } from "./components/StatusPulse";
 import { Timeline } from "./components/Timeline";
 import { ToastStack } from "./components/ToastStack";
 import { useLiveFeed } from "./lib/useLiveFeed";
-import type { ContractChangeRecord, EndpointSummary } from "./lib/types";
 
 export default function App() {
   useLiveFeed();
 
-  const [selectedEndpoint, setSelectedEndpoint] = useState<EndpointSummary | null>(null);
-  const [selectedChange, setSelectedChange] = useState<ContractChangeRecord | null>(null);
+  const [selectedEndpoint, setSelectedEndpoint] = useState<EndpointView | null>(null);
+  const [selectedChange, setSelectedChange] = useState<ContractChangeView | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
-import type { EndpointSummary } from "../lib/types";
+import type { EndpointView } from "@schema-watch/ui";
 
 export function CommandPalette({
   open,
@@ -10,7 +10,7 @@ export function CommandPalette({
 }: {
   open: boolean;
   onClose: () => void;
-  onSelect: (endpoint: EndpointSummary) => void;
+  onSelect: (endpoint: EndpointView) => void;
 }) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);

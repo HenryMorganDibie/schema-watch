@@ -1,0 +1,26 @@
+# Deploy target for the Schema-Watch cloud app.
+#
+# This is a static SPA: the API is a separate long-running service (Fastify +
+# Postgres) that cannot run on Netlify's serverless model, so point
+# VITE_API_URL at wherever that is hosted (Railway, Render, Fly, a VPS).
+# Set it in Netlify under Site settings > Environment variables.
+
+[build]
+  base = "packages/web"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Client-side routing: every path must serve index.html or a refresh on
+# /billing returns a 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

@@ -1,13 +1,15 @@
 import { summarizeChange } from "@schema-watch/core";
-import { SeverityBadge } from "./SeverityBadge";
-import type { ContractChangeRecord } from "../lib/types";
+import { SeverityBadge } from "./SeverityBadge.js";
+import type { ContractChangeView } from "../types.js";
 
-export function DiffViewer({ change, onBack }: { change: ContractChangeRecord; onBack: () => void }) {
+export function DiffViewer({ change, onBack }: { change: ContractChangeView; onBack?: () => void }) {
   return (
     <div>
-      <button className="icon-button" onClick={onBack} style={{ marginBottom: 12, fontSize: 12.5 }}>
-        ← Back to timeline
-      </button>
+      {onBack && (
+        <button className="icon-button" onClick={onBack} style={{ marginBottom: 12, fontSize: 12.5 }}>
+          &larr; Back to timeline
+        </button>
+      )}
       <div className="diff-viewer">
         <div className="diff-viewer__header">
           <div>
@@ -24,7 +26,7 @@ export function DiffViewer({ change, onBack }: { change: ContractChangeRecord; o
             <span className="diff-change-row__path">{c.path || "(root)"}</span>
             <span className="diff-change-row__values">
               {c.before && <span className="diff-before">{c.before}</span>}
-              {c.before && c.after && <span className="diff-arrow">→</span>}
+              {c.before && c.after && <span className="diff-arrow">&rarr;</span>}
               {c.after && <span className="diff-after">{c.after}</span>}
               {!c.before && !c.after && <span>{summarizeChange(c)}</span>}
             </span>

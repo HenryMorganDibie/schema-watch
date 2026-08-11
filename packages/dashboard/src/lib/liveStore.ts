@@ -1,18 +1,18 @@
 import { create } from "zustand";
-import type { ContractChangeRecord } from "./types";
+import type { ContractChangeView } from "@schema-watch/ui";
 
 export type ConnectionStatus = "connecting" | "open" | "closed";
 
 export interface ToastItem {
   id: string;
-  change: ContractChangeRecord;
+  change: ContractChangeView;
 }
 
 interface LiveState {
   status: ConnectionStatus;
   toasts: ToastItem[];
   setStatus: (status: ConnectionStatus) => void;
-  pushToast: (change: ContractChangeRecord) => void;
+  pushToast: (change: ContractChangeView) => void;
   dismissToast: (id: string) => void;
 }
 

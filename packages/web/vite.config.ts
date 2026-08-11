@@ -6,18 +6,15 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      // Consume the shared UI package as source so it needs no build step and
-      // stays hot-reloadable while developing either app.
       "@schema-watch/ui/styles.css": path.resolve(__dirname, "../ui/src/styles/index.css"),
       "@schema-watch/ui": path.resolve(__dirname, "../ui/src/index.ts"),
     },
   },
   server: {
-    port: 5173,
-    proxy: {
-      "/api": "http://localhost:4561",
-      "/ws": { target: "ws://localhost:4561", ws: true },
-    },
+    port: 5174,
+    // Dev only. In production the API lives on another host entirely (see
+    // VITE_API_URL), because this app deploys as static files to Netlify.
+    proxy: { "/api": "http://localhost:4000" },
   },
   build: { outDir: "dist" },
 });

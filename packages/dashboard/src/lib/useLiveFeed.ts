@@ -1,11 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { useLiveStore } from "./liveStore";
-import type { ContractChangeRecord, EndpointSummary } from "./types";
+import type { ContractChangeView, EndpointView } from "@schema-watch/ui";
 
 interface WsEvent {
   type: "change";
-  payload: ContractChangeRecord;
+  payload: ContractChangeView;
 }
 
 const RECONNECT_DELAY_MS = 2000;
@@ -36,10 +36,10 @@ export function useLiveFeed() {
         if (message.type !== "change") return;
         const change = message.payload;
 
-        queryClient.setQueryData<ContractChangeRecord[]>(["changes"], (prev) =>
+        queryClient.setQueryData<ContractChangeView[]>(["changes"], (prev) =>
           prev ? [change, ...prev] : [change],
         );
-        queryClient.setQueryData<EndpointSummary[]>(["endpoints"], (prev) =>
+        queryClient.setQueryData<EndpointView[]>(["endpoints"], (prev) =>
           prev?.map((e) =>
             e.id === change.endpointId
               ? { ...e, latestSeverity: change.severity, changeCount: e.changeCount + 1, lastSeenAt: change.createdAt }

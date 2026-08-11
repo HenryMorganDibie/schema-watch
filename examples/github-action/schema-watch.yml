@@ -1,13 +1,14 @@
 # Blocks a PR when the API contract breaks.
 #
 # Drop this into .github/workflows/ in the repo you want gated, set the
-# SCHEMA_WATCH_API_KEY secret (mint one via POST /api/teams/:teamId/api-keys)
+# SCHEMA_WATCH_API_KEY secret (mint one in the dashboard under Team > API keys)
 # and the SCHEMA_WATCH_PROJECT_ID variable, then mark "contract-check" as a
 # required status check in branch protection.
 #
-# The step that matters is the last one: it POSTs the contract observed in
-# this branch to /api/ci/check and exits non-zero when the response says a
-# breaking change slipped in.
+# How it works: your integration tests run against the Schema-Watch proxy
+# instead of your API directly, so every response gets captured. `check` then
+# sends that contract to the server, which diffs it against the last known
+# good one and exits 1 if anything breaking slipped in.
 
 name: API contract
 
@@ -29,29 +30,28 @@ jobs:
 
       - run: npm ci
 
-      # Run whatever exercises your API and writes the observed contract to
-      # contract.json. The simplest version: run the agent's proxy in front
-      # of your test server during the integration suite, then export.
-      - name: Capture contract
+      - name: Start your API
+        run: npm run start:test-api &
+
+      - name: Start the Schema-Watch proxy
+        env:
+          # Point the proxy at your real API; tests then talk to :4560.
+          SCHEMA_WATCH_TARGET: http://localhost:3001
+        run: |
+          npx schema-watch init --target "$SCHEMA_WATCH_TARGET" || true
+          npx schema-watch start &
+          npx wait-on http://localhost:4561/api/health
+
+      - name: Run integration tests through the proxy
+        env:
+          # Whatever env var your test suite uses for the API base URL.
+          API_BASE_URL: http://localhost:4560
         run: npm run test:integration
 
       - name: Check for breaking contract changes
         env:
-          SCHEMA_WATCH_API_KEY: ${{ secrets.SCHEMA_WATCH_API_KEY }}
-          SCHEMA_WATCH_PROJECT_ID: ${{ vars.SCHEMA_WATCH_PROJECT_ID }}
-        run: |
-          RESPONSE=$(curl -sS -X POST "https://api.schema-watch.dev/api/ci/check" \
-            -H "content-type: application/json" \
-            -H "x-api-key: $SCHEMA_WATCH_API_KEY" \
-            -d "$(jq -c --arg pid "$SCHEMA_WATCH_PROJECT_ID" \
-                  '{projectId: $pid, entries: .}' contract.json)")
-
-          echo "$RESPONSE" | jq .
-
-          if [ "$(echo "$RESPONSE" | jq -r '.pass')" != "true" ]; then
-            echo "::error::Breaking API contract change detected"
-            echo "$RESPONSE" | jq -r '.breakingChanges[].changes[] | "  \(.path): \(.before) -> \(.after)"'
-            exit 1
-          fi
-
-          echo "No breaking contract changes."
+          SCHEMA_WATCH_SYNC_API_KEY: ${{ secrets.SCHEMA_WATCH_API_KEY }}
+          SCHEMA_WATCH_SYNC_PROJECT_ID: ${{ vars.SCHEMA_WATCH_PROJECT_ID }}
+          SCHEMA_WATCH_CLOUD_URL: https://api.schema-watch.dev
+        # Exits 1 on a breaking change, which fails the job and blocks the PR.
+        run: npx schema-watch check

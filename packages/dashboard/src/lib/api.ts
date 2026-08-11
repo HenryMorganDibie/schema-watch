@@ -1,4 +1,4 @@
-import type { ContractChangeRecord, EndpointSummary } from "./types";
+import type { ContractChangeView, EndpointView } from "@schema-watch/ui";
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
@@ -6,11 +6,11 @@ async function json<T>(res: Response): Promise<T> {
 }
 
 export const api = {
-  listEndpoints: (): Promise<EndpointSummary[]> => fetch("/api/endpoints").then((res) => json<EndpointSummary[]>(res)),
+  listEndpoints: (): Promise<EndpointView[]> => fetch("/api/endpoints").then((res) => json<EndpointView[]>(res)),
 
-  listChanges: (endpointId?: string): Promise<ContractChangeRecord[]> =>
+  listChanges: (endpointId?: string): Promise<ContractChangeView[]> =>
     fetch(endpointId ? `/api/endpoints/${endpointId}/changes` : "/api/changes").then((res) =>
-      json<ContractChangeRecord[]>(res),
+      json<ContractChangeView[]>(res),
     ),
 
   acknowledge: (endpointId: string, changeId: string): Promise<void> =>

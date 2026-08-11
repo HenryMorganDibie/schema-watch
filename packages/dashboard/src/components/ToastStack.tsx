@@ -1,7 +1,7 @@
 import { useLiveStore } from "../lib/liveStore";
-import type { ContractChangeRecord } from "../lib/types";
+import type { ContractChangeView } from "@schema-watch/ui";
 
-export function ToastStack({ onOpen }: { onOpen: (change: ContractChangeRecord) => void }) {
+export function ToastStack({ onOpen }: { onOpen: (change: ContractChangeView) => void }) {
   const toasts = useLiveStore((s) => s.toasts);
   const dismiss = useLiveStore((s) => s.dismissToast);
 

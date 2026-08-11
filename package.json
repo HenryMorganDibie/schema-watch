@@ -13,7 +13,8 @@
     "dev:dashboard": "npm run dev --workspace packages/dashboard",
     "dev:server": "npm run dev --workspace packages/server",
     "db:migrate": "npm run db:migrate --workspace packages/server",
-    "db:generate": "npm run db:generate --workspace packages/server"
+    "db:generate": "npm run db:generate --workspace packages/server",
+    "dev:web": "npm run dev --workspace packages/web"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

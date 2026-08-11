@@ -7,9 +7,18 @@ services:
       POSTGRES_PASSWORD: schema_watch
       POSTGRES_DB: schema_watch
     ports:
-      - "5432:5432"
+      # Published on 5433, not 5432, so this does not silently collide with a
+      # PostgreSQL already installed on the host (very common on dev machines;
+      # the symptom is a confusing "authentication failed" from the wrong server).
+      # Override with SCHEMA_WATCH_DB_PORT if 5433 is taken too.
+      - "${SCHEMA_WATCH_DB_PORT:-5433}:5432"
     volumes:
       - schema_watch_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U schema_watch -d schema_watch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   schema_watch_pg:

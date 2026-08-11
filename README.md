@@ -50,7 +50,9 @@ file to understand the product's behavior faster than reading the code.
 packages/
   core/        schema inference + diff engine (framework-agnostic, unit tested)
   agent/       local reverse proxy + SQLite + REST/WS API + CLI (`schema-watch`)
-  dashboard/   React + Vite live UI, served by the agent
+  ui/          presentational components + design tokens shared by both apps
+  dashboard/   local live UI, served by the agent
+  web/         cloud app - signup, teams, projects, API keys, billing (Netlify)
   server/      cloud backend - accounts, teams, billing, CI gate, Slack, badge
 examples/
   demo/          the one-command demo above
@@ -86,12 +88,26 @@ The free tier is fully local and needs no account. The cloud backend adds
 history, team dashboards, Slack alerts, the CI gate, and the status badge.
 
 ```bash
-cp .env.example .env    # JWT_SECRET is the only required value
-docker compose up -d    # Postgres
+cp .env.example .env      # JWT_SECRET is the only required value
+docker compose up -d      # Postgres on :5433
 cd packages/server
-npm run db:migrate      # creates the schema (no migration is committed yet)
-npm run dev             # :4000
+npx prisma migrate deploy # applies the committed migration
+npm run dev               # API on :4000
+
+# in another terminal, the cloud app:
+npm run dev:web           # :5174, proxies /api to :4000
 ```
+
+Sign up at <http://localhost:5174/signup>, create a team and project, mint an
+API key under Team, then enable `sync` in the agent's `schema-watch.config.json`.
+
+### Deploying
+
+The cloud app is a static SPA and ships with a `netlify.toml`: set the base to
+`packages/web` and add a `VITE_API_URL` environment variable pointing at the
+API. The API itself is a long-running Fastify process and cannot run on
+Netlify's serverless model, so host it somewhere that runs Node continuously
+(Railway, Render, Fly, a VPS) with a managed Postgres.
 
 ### Payments
 
@@ -109,6 +125,17 @@ That table is a security boundary, not display copy: webhooks check the amount
 actually paid against it before granting a plan, and Flutterwave transactions
 are re-verified against Flutterwave's API rather than trusted from the webhook
 body.
+
+## Blocking a PR when the contract breaks
+
+```bash
+# after your integration tests have driven traffic through the proxy
+schema-watch export --out contract.json
+schema-watch check --contract contract.json   # exits 1 on a breaking change
+```
+
+`examples/github-action/schema-watch.yml` is a working workflow. The gate
+requires a Pro or Team plan.
 
 ## Tests
 
@@ -128,17 +155,22 @@ Working and verified end to end:
   integrations, badge, Flutterwave + Stripe billing (typechecked, boots, routes
   exercised by hand)
 
-Not built yet, and needed before this can be sold:
+- Cloud app: signup, login, teams, projects, API keys, billing. Verified in a
+  browser end to end against real Postgres.
+- CI gate: `export` and `check`, verified to exit 1 on a real breaking change.
+- Prisma migration, applied to a real database.
 
-- **No cloud frontend.** There is no signup, login, or billing UI anywhere. The
-  dashboard talks only to the local agent, so a paying customer currently has no
-  way to create an account.
+Not built yet, and still needed before this can be sold:
+
 - **No deployment.** Nothing is hosted; `api.schema-watch.dev` does not exist.
-- **No committed Prisma migration**, so the Postgres schema has never been
-  created or run against a real database.
-- **The CI gate is incomplete.** `POST /api/ci/check` works, but no command
-  exports the `contract.json` the example workflow feeds it.
-- **Payments are untested against live processors.** No Flutterwave or Stripe
-  account, plan, or webhook has been exercised with real credentials.
+  The app and API both need somewhere to live.
+- **Payments are untested against live processors.** The code paths work and
+  reject forged webhooks, but no real Flutterwave or Stripe account, payment
+  plan, or webhook has been exercised with live credentials. Nobody has been
+  charged a real naira or dollar yet.
+- **No email.** No verification, no password reset, so a forgotten password
+  currently means a lost account.
+- **Team invites require the invitee to already have an account** - there is no
+  invitation email flow.
 - Gzip/brotli response bodies pass through correctly but are skipped for
   diffing. Only tested on Windows and Node 24.
