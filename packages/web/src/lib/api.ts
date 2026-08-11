@@ -1,11 +1,20 @@
 import type { ContractChangeView, EndpointView } from "@schema-watch/ui";
 
+declare global {
+  interface Window {
+    __SCHEMA_WATCH_API__?: string;
+  }
+}
+
 /**
  * In production this app is static files on a CDN while the API lives on
- * another host, so the base URL is baked in at build time. In dev it stays
- * empty and Vite proxies /api to localhost:4000.
+ * another host. The base URL is resolved at RUNTIME from /config.js rather
+ * than baked in at build time, so pointing the app at a different API is a
+ * one-line edit and redeploy of that file instead of a full rebuild. Falls
+ * back to the build-time variable, then to same-origin (which is what dev
+ * uses, where Vite proxies /api to localhost:4000).
  */
-const API_BASE = import.meta.env.VITE_API_URL ?? "";
+const API_BASE = window.__SCHEMA_WATCH_API__ || import.meta.env.VITE_API_URL || "";
 
 const TOKEN_KEY = "schema-watch.token";
 
