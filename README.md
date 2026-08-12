@@ -52,7 +52,7 @@ packages/
   agent/       local reverse proxy + SQLite + REST/WS API + CLI (`schema-watch`)
   ui/          presentational components + design tokens shared by both apps
   dashboard/   local live UI, served by the agent
-  web/         cloud app - signup, teams, projects, API keys, billing (Netlify)
+  web/         cloud app - signup, teams, projects, API keys, billing
   server/      cloud backend - accounts, teams, billing, CI gate, Slack, badge
 examples/
   demo/          the one-command demo above
@@ -103,11 +103,14 @@ API key under Team, then enable `sync` in the agent's `schema-watch.config.json`
 
 ### Deploying
 
-The cloud app is a static SPA and ships with a `netlify.toml`: set the base to
-`packages/web` and add a `VITE_API_URL` environment variable pointing at the
-API. The API itself is a long-running Fastify process and cannot run on
-Netlify's serverless model, so host it somewhere that runs Node continuously
-(Railway, Render, Fly, a VPS) with a managed Postgres.
+Both halves run on Vercel from this repo, each as its own project with a
+different root directory, and Postgres is hosted on Supabase. Full settings,
+connection-string shapes and the RLS rationale are in
+[`DEPLOYING.md`](./DEPLOYING.md).
+
+The app resolves its API URL at runtime from `public/config.js` rather than at
+build time, so repointing it at a different backend is a one-line edit and a
+redeploy, with no environment variable and no rebuild.
 
 ### Email
 

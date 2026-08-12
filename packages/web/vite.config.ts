@@ -13,7 +13,7 @@ export default defineConfig({
   server: {
     port: 5174,
     // Dev only. In production the API lives on another host entirely (see
-    // VITE_API_URL), because this app deploys as static files to Netlify.
+    // VITE_API_URL), because this app deploys as static files to a CDN.
     proxy: { "/api": "http://localhost:4000" },
   },
   build: { outDir: "dist" },

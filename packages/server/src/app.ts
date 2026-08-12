@@ -44,5 +44,13 @@ export function buildApp() {
 
   app.get("/api/health", async () => ({ ok: true }));
 
+  // The API root is reachable in a browser, so answer with something honest
+  // rather than a bare 404. This is also the canary for routing being wired
+  // correctly: if it 500s, requests are not reaching this app at all.
+  app.get("/", async () => ({
+    service: "schema-watch-api",
+    docs: "https://github.com/HenryMorganDibie/schema-watch",
+  }));
+
   return app;
 }

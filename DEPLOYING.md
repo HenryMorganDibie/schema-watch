@@ -6,7 +6,7 @@ Three pieces, and only two of them are hosted:
 | --- | --- | --- |
 | Local agent + dashboard | **Nowhere. Runs on each developer's machine.** | It proxies the developer's own backend. Hosting it would mean routing customers' private API traffic through your servers. |
 | Cloud API (`packages/server`) | Vercel serverless (or Render/Railway) | Needs env vars and a database. |
-| Cloud app (`packages/web`) | Vercel or Netlify (static) | Plain SPA, no server needed. |
+| Cloud app (`packages/web`) | Vercel (static) | Plain SPA, no server needed. |
 
 ## 1. Database (done)
 
@@ -70,10 +70,9 @@ Root Directory `packages/web`, and one environment variable:
 VITE_API_URL   https://<your-api-domain>
 ```
 
-This is baked in at build time, so changing it needs a redeploy. A
-`netlify.toml` is included if you would rather host the app on Netlify; the
-API cannot go there, since Netlify only runs serverless functions and this is
-a long-lived Fastify process.
+The app also resolves its API URL at runtime from `public/config.js`, which
+takes precedence over this variable. Editing that one line and redeploying
+repoints the app without a rebuild.
 
 ## 4. Point the agent at production
 
