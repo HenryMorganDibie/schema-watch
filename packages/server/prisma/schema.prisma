@@ -53,13 +53,36 @@ enum BillingProvider {
 }
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  passwordHash String
-  name         String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  memberships  TeamMember[]
+  id            String              @id @default(cuid())
+  email         String              @unique
+  passwordHash  String
+  name          String?
+  emailVerified Boolean             @default(false)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  memberships   TeamMember[]
+  tokens        VerificationToken[]
+}
+
+enum TokenPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+// Single-use, expiring tokens for email verification and password reset.
+// Only the SHA-256 hash is stored: a leaked database backup then cannot be
+// used to take over accounts, the same reasoning as ApiKey.keyHash.
+model VerificationToken {
+  id        String       @id @default(cuid())
+  tokenHash String       @unique
+  purpose   TokenPurpose
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime     @default(now())
+
+  @@index([userId, purpose])
 }
 
 model Team {

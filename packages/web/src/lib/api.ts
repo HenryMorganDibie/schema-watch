@@ -65,6 +65,7 @@ export interface Me {
   id: string;
   email: string;
   name: string | null;
+  emailVerified: boolean;
   teams: { id: string; name: string; slug: string; plan: Plan; role: TeamRole }[];
 }
 
@@ -92,6 +93,17 @@ export interface BillingProviders {
 }
 
 export const api = {
+  verifyEmail: (token: string) =>
+    request<{ verified: true }>("/api/auth/verify-email", { method: "POST", body: JSON.stringify({ token }) }),
+
+  resendVerification: () => request<{ sent?: true; alreadyVerified?: true }>("/api/auth/verify-email/resend", { method: "POST" }),
+
+  forgotPassword: (email: string) =>
+    request<{ sent: true }>("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+
+  resetPassword: (token: string, password: string) =>
+    request<{ token: string }>("/api/auth/reset-password", { method: "POST", body: JSON.stringify({ token, password }) }),
+
   signup: (email: string, password: string, name?: string) =>
     request<{ token: string; user: { id: string; email: string } }>("/api/auth/signup", {
       method: "POST",

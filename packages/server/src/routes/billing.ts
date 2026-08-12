@@ -12,7 +12,7 @@ import { requireMembership } from "../lib/membership.js";
 import { PLAN_PRICING } from "../lib/pricing.js";
 import { prisma } from "../lib/prisma.js";
 import { STRIPE_PRICE_IDS, getStripe, isStripeConfigured } from "../lib/stripe.js";
-import { requireUser } from "../plugins/authenticate.js";
+import { requireUser, requireVerifiedEmail } from "../plugins/authenticate.js";
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:5173";
 
@@ -30,7 +30,7 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Body: { teamId: string; plan: PaidPlan } }>(
     "/stripe/checkout-session",
-    { preHandler: requireUser },
+    { preHandler: [requireUser, requireVerifiedEmail] },
     async (req, reply) => {
       if (!isStripeConfigured()) return reply.code(503).send({ error: "Stripe is not configured on this server" });
 
@@ -129,7 +129,7 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Body: { teamId: string; plan: PaidPlan; currency?: string } }>(
     "/flutterwave/checkout",
-    { preHandler: requireUser },
+    { preHandler: [requireUser, requireVerifiedEmail] },
     async (req, reply) => {
       if (!isFlutterwaveConfigured()) {
         return reply.code(503).send({ error: "Flutterwave is not configured on this server" });

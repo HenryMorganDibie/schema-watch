@@ -1,7 +1,9 @@
 import type { FastifyInstance } from "fastify";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 import { signToken } from "../lib/jwt.js";
 import { prisma } from "../lib/prisma.js";
+import { consumeToken, issueToken } from "../lib/tokens.js";
 import { requireUser } from "../plugins/authenticate.js";
 
 interface AuthBody {
@@ -10,30 +12,54 @@ interface AuthBody {
   name?: string;
 }
 
+const MIN_PASSWORD_LENGTH = 8;
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: AuthBody }>("/signup", async (req, reply) => {
     const { email, password, name } = req.body ?? {};
-    if (!email || !password || password.length < 8) {
-      return reply.code(400).send({ error: "email and a password of at least 8 characters are required" });
+    if (!email || !password || password.length < MIN_PASSWORD_LENGTH) {
+      return reply
+        .code(400)
+        .send({ error: `email and a password of at least ${MIN_PASSWORD_LENGTH} characters are required` });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const normalized = normalizeEmail(email);
+    const existing = await prisma.user.findUnique({ where: { email: normalized } });
     if (existing) return reply.code(409).send({ error: "an account with this email already exists" });
 
     const user = await prisma.user.create({
-      data: { email, passwordHash: await hashPassword(password), name },
+      data: { email: normalized, passwordHash: await hashPassword(password), name },
     });
 
-    return reply.code(201).send({ token: signToken({ userId: user.id }), user: { id: user.id, email: user.email, name: user.name } });
+    // The account exists whether or not the mail provider is reachable, so a
+    // provider outage must not turn a successful signup into a 500. The user
+    // can always request another link from inside the app.
+    try {
+      await sendVerificationEmail(user.email, await issueToken(user.id, "EMAIL_VERIFY"));
+    } catch (err) {
+      req.log.error({ err }, "failed to send verification email");
+    }
+
+    return reply.code(201).send({
+      token: signToken({ userId: user.id }),
+      user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified },
+    });
   });
 
   app.post<{ Body: AuthBody }>("/login", async (req, reply) => {
     const { email, password } = req.body ?? {};
-    const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
+    const user = email ? await prisma.user.findUnique({ where: { email: normalizeEmail(email) } }) : null;
     if (!user || !(await verifyPassword(password ?? "", user.passwordHash))) {
       return reply.code(401).send({ error: "invalid email or password" });
     }
-    return reply.send({ token: signToken({ userId: user.id }), user: { id: user.id, email: user.email, name: user.name } });
+    return reply.send({
+      token: signToken({ userId: user.id }),
+      user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified },
+    });
   });
 
   app.get("/me", { preHandler: requireUser }, async (req, reply) => {
@@ -47,7 +73,83 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       id: user.id,
       email: user.email,
       name: user.name,
-      teams: user.memberships.map((m) => ({ id: m.team.id, name: m.team.name, slug: m.team.slug, plan: m.team.plan, role: m.role })),
+      emailVerified: user.emailVerified,
+      teams: user.memberships.map((m) => ({
+        id: m.team.id,
+        name: m.team.name,
+        slug: m.team.slug,
+        plan: m.team.plan,
+        role: m.role,
+      })),
+    });
+  });
+
+  app.post<{ Body: { token: string } }>("/verify-email", async (req, reply) => {
+    const { token } = req.body ?? {};
+    if (!token) return reply.code(400).send({ error: "token is required" });
+
+    const consumed = await consumeToken(token, "EMAIL_VERIFY");
+    if (!consumed) return reply.code(400).send({ error: "this link is invalid or has expired" });
+
+    await prisma.user.update({ where: { id: consumed.userId }, data: { emailVerified: true } });
+    return reply.send({ verified: true });
+  });
+
+  app.post("/verify-email/resend", { preHandler: requireUser }, async (req, reply) => {
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!user) return reply.code(404).send({ error: "not found" });
+    if (user.emailVerified) return reply.send({ alreadyVerified: true });
+
+    try {
+      await sendVerificationEmail(user.email, await issueToken(user.id, "EMAIL_VERIFY"));
+    } catch (err) {
+      req.log.error({ err }, "failed to resend verification email");
+      return reply.code(502).send({ error: "could not send the email just now, please try again" });
+    }
+    return reply.send({ sent: true });
+  });
+
+  /**
+   * Always reports success, even when no such account exists. Returning 404
+   * here would turn this endpoint into a way to test which email addresses
+   * are registered.
+   */
+  app.post<{ Body: { email: string } }>("/forgot-password", async (req, reply) => {
+    const { email } = req.body ?? {};
+    if (!email) return reply.code(400).send({ error: "email is required" });
+
+    const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
+    if (user) {
+      try {
+        await sendPasswordResetEmail(user.email, await issueToken(user.id, "PASSWORD_RESET"));
+      } catch (err) {
+        req.log.error({ err }, "failed to send password reset email");
+      }
+    }
+
+    return reply.send({ sent: true });
+  });
+
+  app.post<{ Body: { token: string; password: string } }>("/reset-password", async (req, reply) => {
+    const { token, password } = req.body ?? {};
+    if (!token || !password || password.length < MIN_PASSWORD_LENGTH) {
+      return reply.code(400).send({ error: `token and a password of at least ${MIN_PASSWORD_LENGTH} characters are required` });
+    }
+
+    const consumed = await consumeToken(token, "PASSWORD_RESET");
+    if (!consumed) return reply.code(400).send({ error: "this link is invalid or has expired" });
+
+    // Completing a reset proves control of the inbox, so treat the address as
+    // verified too - otherwise a user who never clicked the original link
+    // would still be stuck behind the unverified gate.
+    const user = await prisma.user.update({
+      where: { id: consumed.userId },
+      data: { passwordHash: await hashPassword(password), emailVerified: true },
+    });
+
+    return reply.send({
+      token: signToken({ userId: user.id }),
+      user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified },
     });
   });
 }

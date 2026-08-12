@@ -1,6 +1,7 @@
 import { Logo } from "@schema-watch/ui";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { VerifyBanner } from "./VerifyBanner";
 import { useActiveTeam } from "../lib/useActiveTeam";
 
 export function AppShell() {
@@ -48,6 +49,7 @@ export function AppShell() {
           </button>
         </div>
       </nav>
+      <VerifyBanner />
       <Outlet />
     </>
   );

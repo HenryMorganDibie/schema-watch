@@ -108,6 +108,8 @@ export function AuthPage({ mode }: { mode: "login" | "signup" }) {
           ) : (
             <>
               New here? <Link to="/signup">Create an account</Link>
+              <br />
+              <Link to="/forgot-password">Forgot your password?</Link>
             </>
           )}
         </div>

@@ -109,6 +109,21 @@ API. The API itself is a long-running Fastify process and cannot run on
 Netlify's serverless model, so host it somewhere that runs Node continuously
 (Railway, Render, Fly, a VPS) with a managed Postgres.
 
+### Email
+
+Verification and password reset go through [Resend](https://resend.com). Set
+`RESEND_API_KEY`, and `EMAIL_FROM` once a sending domain is verified. With no
+key configured the server still runs and logs the link it would have sent, so
+the flow stays testable locally.
+
+Tokens are single-use, expire (24 hours for verification, 1 hour for reset),
+and only their SHA-256 hash is stored, so a leaked database backup cannot be
+used to take over an account. `forgot-password` always reports success, even
+for an unknown address, so it cannot be used to discover who has an account.
+
+Unverified users can sign in and look around, but cannot mint API keys or
+subscribe until they confirm their address.
+
 ### Payments
 
 Both processors are optional and independent; the server boots fine with
@@ -146,31 +161,39 @@ npm run typecheck --workspaces
 
 ## Status: what is and is not built
 
+**Live:** the app is at <https://schema-watch-web.vercel.app>, the API at
+<https://schema-watch-server-sigma.vercel.app>, backed by Postgres on Supabase.
+
 Working and verified end to end:
 
 - Proxy capture, shape inference, diffing, severity rules (13 unit tests)
 - Local dashboard: live WebSocket feed, diff viewer, command palette, dark/light
 - Affected-file detection
-- Cloud backend routes: auth, teams, API keys, projects, snapshots, CI check,
-  integrations, badge, Flutterwave + Stripe billing (typechecked, boots, routes
-  exercised by hand)
-
-- Cloud app: signup, login, teams, projects, API keys, billing. Verified in a
-  browser end to end against real Postgres.
+- Cloud app: signup, login, teams, projects, API keys, billing pages. Driven in
+  a real browser against the deployed API, not just curl.
+- Email verification and password reset, via Resend. Verified against a live
+  database: forged tokens rejected, real tokens accepted, replayed tokens
+  rejected, and the old password stops working after a reset.
 - CI gate: `export` and `check`, verified to exit 1 on a real breaking change.
-- Prisma migration, applied to a real database.
+- Prisma migrations, applied to the production database.
 
 Not built yet, and still needed before this can be sold:
 
-- **No deployment.** Nothing is hosted; `api.schema-watch.dev` does not exist.
-  The app and API both need somewhere to live.
 - **Payments are untested against live processors.** The code paths work and
   reject forged webhooks, but no real Flutterwave or Stripe account, payment
   plan, or webhook has been exercised with live credentials. Nobody has been
-  charged a real naira or dollar yet.
-- **No email.** No verification, no password reset, so a forgotten password
-  currently means a lost account.
+  charged a real naira or dollar yet, and `/api/billing/providers` currently
+  reports both as unconfigured.
+- **No custom domain**, so verification email is sent from Resend's shared
+  `onboarding@resend.dev`. That only reaches your own address - signups from
+  real users will not receive anything until a domain is verified in Resend and
+  `EMAIL_FROM` is set.
 - **Team invites require the invitee to already have an account** - there is no
   invitation email flow.
+- **A password reset does not end existing sessions.** JWTs are stateless and
+  last 30 days, so an attacker holding a stolen token keeps it until it expires.
+  Closing this needs a token version on the user, checked per request.
+- Cold starts on Vercel's serverless functions add roughly a second to the
+  first request, which reads as a hang on the signup button.
 - Gzip/brotli response bodies pass through correctly but are skipped for
   diffing. Only tested on Windows and Node 24.

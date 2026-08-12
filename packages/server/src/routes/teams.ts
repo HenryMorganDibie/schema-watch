@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { generateApiKey } from "../lib/apiKey.js";
 import { requireMembership } from "../lib/membership.js";
 import { prisma } from "../lib/prisma.js";
-import { requireUser } from "../plugins/authenticate.js";
+import { requireUser, requireVerifiedEmail } from "../plugins/authenticate.js";
 
 function slugify(name: string): string {
   return name
@@ -52,17 +52,21 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  app.post<{ Params: { teamId: string }; Body: { label: string } }>("/:teamId/api-keys", async (req, reply) => {
-    const membership = await requireMembership(req.userId!, req.params.teamId, ["OWNER", "ADMIN"]);
-    if (!membership) return reply.code(403).send({ error: "only team owners/admins can create API keys" });
+  app.post<{ Params: { teamId: string }; Body: { label: string } }>(
+    "/:teamId/api-keys",
+    { preHandler: requireVerifiedEmail },
+    async (req, reply) => {
+      const membership = await requireMembership(req.userId!, req.params.teamId, ["OWNER", "ADMIN"]);
+      if (!membership) return reply.code(403).send({ error: "only team owners/admins can create API keys" });
 
-    const { plainText, hash } = generateApiKey();
-    const label = req.body?.label?.trim() || "unnamed key";
-    const created = await prisma.apiKey.create({ data: { teamId: req.params.teamId, label, keyHash: hash } });
+      const { plainText, hash } = generateApiKey();
+      const label = req.body?.label?.trim() || "unnamed key";
+      const created = await prisma.apiKey.create({ data: { teamId: req.params.teamId, label, keyHash: hash } });
 
-    // plainText is only ever returned here - the server stores the hash, never the key itself.
-    return reply.code(201).send({ id: created.id, label: created.label, key: plainText });
-  });
+      // plainText is only ever returned here - the server stores the hash, never the key itself.
+      return reply.code(201).send({ id: created.id, label: created.label, key: plainText });
+    },
+  );
 
   app.get<{ Params: { teamId: string } }>("/:teamId/api-keys", async (req, reply) => {
     const membership = await requireMembership(req.userId!, req.params.teamId, ["OWNER", "ADMIN", "MEMBER"]);

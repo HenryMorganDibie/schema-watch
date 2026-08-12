@@ -24,6 +24,19 @@ export async function requireUser(req: FastifyRequest, reply: FastifyReply): Pro
   }
 }
 
+/**
+ * Guards actions that let an account reach outside itself - minting API keys,
+ * starting a subscription. Browsing is deliberately left open so a new user
+ * can look around before confirming their address; this only blocks the
+ * things worth abusing. Run it after requireUser.
+ */
+export async function requireVerifiedEmail(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: req.userId }, select: { emailVerified: true } });
+  if (!user?.emailVerified) {
+    return reply.code(403).send({ error: "verify your email address first", code: "EMAIL_NOT_VERIFIED" });
+  }
+}
+
 /** Machine routes (CI, the agent's sync mode): `X-Api-Key: sw_live_...`, scoped to one team. */
 export async function requireApiKey(req: FastifyRequest, reply: FastifyReply): Promise<void> {
   const key = req.headers["x-api-key"];
