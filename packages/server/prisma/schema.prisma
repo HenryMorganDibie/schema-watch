@@ -1,5 +1,9 @@
 generator client {
   provider = "prisma-client-js"
+  // "native" covers local development on any OS. The rhel target is the engine
+  // Vercel's Lambda runtime needs; without it the deployed function starts and
+  // then fails at the first query with a missing-query-engine error.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

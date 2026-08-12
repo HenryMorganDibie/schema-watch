@@ -9,7 +9,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "vercel-build": "prisma generate && npm run build --workspace packages/core --prefix ../.. && tsc -p tsconfig.json"
+    "vercel-build": "prisma generate && tsc -p tsconfig.json"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
