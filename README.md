@@ -124,6 +124,19 @@ for an unknown address, so it cannot be used to discover who has an account.
 Unverified users can sign in and look around, but cannot mint API keys or
 subscribe until they confirm their address.
 
+### Password policy
+
+Signup and reset require 10+ characters with upper, lower, digit and symbol,
+and reject common passwords compared with symbols and trailing digits
+stripped - otherwise the character rules just teach people to write
+"Password123!", which passes every rule and is among the most guessed strings
+there is. Login is deliberately not held to the policy, so tightening the
+rules can never lock out an existing account.
+
+`packages/server/src/lib/passwordPolicy.ts` is the authority;
+`packages/web/src/components/PasswordStrength.tsx` mirrors it so the user sees
+the same checklist while typing.
+
 ### Payments
 
 Both processors are optional and independent; the server boots fine with

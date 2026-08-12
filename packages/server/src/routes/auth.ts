@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
+import { checkPassword } from "../lib/passwordPolicy.js";
 import { signToken } from "../lib/jwt.js";
 import { prisma } from "../lib/prisma.js";
 import { consumeToken, issueToken } from "../lib/tokens.js";
@@ -12,8 +13,6 @@ interface AuthBody {
   name?: string;
 }
 
-const MIN_PASSWORD_LENGTH = 8;
-
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
@@ -21,13 +20,12 @@ function normalizeEmail(email: string): string {
 export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: AuthBody }>("/signup", async (req, reply) => {
     const { email, password, name } = req.body ?? {};
-    if (!email || !password || password.length < MIN_PASSWORD_LENGTH) {
-      return reply
-        .code(400)
-        .send({ error: `email and a password of at least ${MIN_PASSWORD_LENGTH} characters are required` });
-    }
+    if (!email || !password) return reply.code(400).send({ error: "email and password are required" });
 
     const normalized = normalizeEmail(email);
+    const strength = checkPassword(password, normalized);
+    if (!strength.ok) return reply.code(400).send({ error: strength.reason });
+
     const existing = await prisma.user.findUnique({ where: { email: normalized } });
     if (existing) return reply.code(409).send({ error: "an account with this email already exists" });
 
@@ -132,9 +130,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Body: { token: string; password: string } }>("/reset-password", async (req, reply) => {
     const { token, password } = req.body ?? {};
-    if (!token || !password || password.length < MIN_PASSWORD_LENGTH) {
-      return reply.code(400).send({ error: `token and a password of at least ${MIN_PASSWORD_LENGTH} characters are required` });
-    }
+    if (!token || !password) return reply.code(400).send({ error: "token and password are required" });
+
+    const strength = checkPassword(password);
+    if (!strength.ok) return reply.code(400).send({ error: strength.reason });
 
     const consumed = await consumeToken(token, "PASSWORD_RESET");
     if (!consumed) return reply.code(400).send({ error: "this link is invalid or has expired" });

@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { PasswordStrength, passwordMeetsPolicy } from "../components/PasswordStrength";
 
 export function AuthPage({ mode }: { mode: "login" | "signup" }) {
   const isSignup = mode === "signup";
@@ -12,12 +13,21 @@ export function AuthPage({ mode }: { mode: "login" | "signup" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+
+    // Checked here as well as on the server so the user gets the answer
+    // immediately rather than after a round trip.
+    if (isSignup) {
+      if (!passwordMeetsPolicy(password)) return setError("Your password does not meet the requirements below.");
+      if (password !== confirm) return setError("Those passwords do not match.");
+    }
+
     setSubmitting(true);
     try {
       const result = isSignup ? await api.signup(email, password, name || undefined) : await api.login(email, password);
@@ -88,13 +98,31 @@ export function AuthPage({ mode }: { mode: "login" | "signup" }) {
             className="input"
             type="password"
             required
-            minLength={8}
+            minLength={isSignup ? 10 : undefined}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={isSignup ? "At least 8 characters" : ""}
+            placeholder={isSignup ? "At least 10 characters" : ""}
             autoComplete={isSignup ? "new-password" : "current-password"}
           />
+          {isSignup && <PasswordStrength password={password} />}
         </div>
+
+        {isSignup && (
+          <div className="field">
+            <label className="field__label" htmlFor="confirm">
+              Confirm password
+            </label>
+            <input
+              id="confirm"
+              className="input"
+              type="password"
+              required
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+        )}
 
         <button className="button button--block" type="submit" disabled={submitting}>
           {submitting ? "Working..." : isSignup ? "Create account" : "Sign in"}
