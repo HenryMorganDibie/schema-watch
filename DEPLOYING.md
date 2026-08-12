@@ -8,6 +8,29 @@ Three pieces, and only two of them are hosted:
 | Cloud API (`packages/server`) | Vercel serverless (or Render/Railway) | Needs env vars and a database. |
 | Cloud app (`packages/web`) | Vercel (static) | Plain SPA, no server needed. |
 
+## Running the whole stack locally
+
+Before deploying anywhere, the cloud half runs locally:
+
+```bash
+cp .env.example .env      # JWT_SECRET is the only required value
+docker compose up -d      # Postgres on :5433
+
+cd packages/server
+npx prisma migrate deploy # applies the committed migrations
+npm run dev               # API on :4000
+
+# in another terminal, the cloud app:
+npm run dev:web           # :5174, proxies /api to :4000
+```
+
+Sign up at <http://localhost:5174/signup>, create a team and project, mint an
+API key under Team, then enable `sync` in the agent's
+`schema-watch.config.json`.
+
+With no `RESEND_API_KEY` set, the server logs the verification link it would
+have emailed, so the flow stays testable without a mail provider.
+
 ## 1. Database (done)
 
 Postgres lives on Supabase. Connections go through the **pooler**, not the

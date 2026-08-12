@@ -1,14 +1,13 @@
 # Schema-Watch
 
-Live API contract monitoring. Point your frontend at a local proxy instead of
-your real backend, and the moment a field's type, presence, or nullability
-changes you get an alert naming the exact field and which of your own frontend
-files reference it.
+**Catch breaking API changes before your frontend breaks.**
 
-Full system design, database schema, API surface, and UI architecture are in
-[`ARCHITECTURE.md`](./ARCHITECTURE.md).
+The backend changes `userId` from a string to a number. Nothing throws. You
+spend two hours in the debugger before realising the payload changed shape.
+Schema-Watch tells you the moment it happens, and names the files that will
+break.
 
-## See it working in 30 seconds
+## 30-second demo
 
 ```bash
 npm install
@@ -16,11 +15,10 @@ npm run build
 npm run demo
 ```
 
-Then open **<http://localhost:4561>**.
+Open **<http://localhost:4561>**.
 
-The demo starts a mock backend serving a stable contract, points the agent at
-it, and drives traffic. About ten seconds in, the mock backend "ships a
-breaking change" and four alerts land live while you watch:
+A mock backend serves a stable contract, then "ships a breaking change" ten
+seconds in. Four alerts land live while you watch:
 
 | Endpoint | Change | Verdict |
 | --- | --- | --- |
@@ -29,144 +27,82 @@ breaking change" and four alerts land live while you watch:
 | `GET /api/session` | `user` object to null | Breaking |
 | `GET /api/projects` | `items[].archived` added | Safe |
 
-That last row is the point. Values jitter on every single request in the demo
-and nothing fires; only real shape changes do. A tool that flags every changed
+## What it catches
+
+- Field type changes
+- Removed fields
+- Nullability changes
+- Optional to required changes
+- Array item shape changes
+
+Each is graded by how likely it is to break a caller, and the grade depends on
+direction: a newly required field breaks a *request* body but is harmless in a
+*response*.
+
+## Why it's different
+
+Schema-Watch diffs **payload shape**, not values. Changing timestamps, IDs and
+counts produce no noise at all, so an alert always means something real.
+
+That last row in the table above is the point: values jitter on every request
+in the demo and nothing fires. A tool that cries wolf on every changed
 timestamp is worse than no tool.
 
-## Why it doesn't spam you
+## Use it locally
 
-It diffs the **shape** of each payload (type, optionality, nullability), never
-the values. Severity is context-aware: a new required field is breaking in a
-*request* body but harmless in a *response* body, and a response field that
-quietly becomes optional is breaking even though nothing was removed.
+```bash
+schema-watch init --target http://localhost:3001
+schema-watch start
+```
 
-Those rules are pinned down as executable tests in
-[`packages/core/src/diff.test.ts`](./packages/core/src/diff.test.ts) - read that
-file to understand the product's behavior faster than reading the code.
+Point your frontend's API base URL at `http://localhost:4560` instead of your
+backend and work normally. The dashboard is on `http://localhost:4561`.
+
+Set `frontendSrcDir` in the generated `schema-watch.config.json` to your app's
+`src/` folder to get the "which files reference this endpoint" list.
+
+## Use it in CI
+
+```bash
+schema-watch export --out contract.json
+schema-watch check --contract contract.json   # exits 1 on a breaking change
+```
+
+`examples/github-action/schema-watch.yml` is a working workflow.
+
+## Current status
+
+- ✅ Local monitoring and contract diffing
+- ✅ Live dashboard with diff viewer
+- ✅ Affected-file detection
+- ✅ CI contract checks
+- ✅ Accounts, email verification, password reset
+- 🚧 Team collaboration features in progress
+- 🚧 Production payment integrations in progress
+
+The local tool is free forever and needs no account.
+
+## Docs
+
+| | |
+| --- | --- |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | system design, database schema, API surface |
+| [DEPLOYING.md](./DEPLOYING.md) | hosting the cloud backend and app |
+| [SECURITY.md](./SECURITY.md) | auth, tokens, password policy, known gaps |
+| [BILLING.md](./BILLING.md) | plans, processors, how pricing is enforced |
+| [ROADMAP.md](./ROADMAP.md) | what is next, and what is deliberately not built |
 
 ## Repo layout
 
 ```text
 packages/
   core/        schema inference + diff engine (framework-agnostic, unit tested)
-  agent/       local reverse proxy + SQLite + REST/WS API + CLI (`schema-watch`)
+  agent/       local reverse proxy + SQLite + REST/WS API + CLI
   ui/          presentational components + design tokens shared by both apps
   dashboard/   local live UI, served by the agent
   web/         cloud app - signup, teams, projects, API keys, billing
   server/      cloud backend - accounts, teams, billing, CI gate, Slack, badge
-examples/
-  demo/          the one-command demo above
-  github-action/ copy-pasteable CI gate workflow
-extension/     phase-2 Chrome DevTools panel (design notes only, not built)
 ```
-
-## Use it on your own project
-
-```bash
-cd your-project
-node path/to/schema-watch/packages/agent/dist/cli.js init --target http://localhost:3001
-node path/to/schema-watch/packages/agent/dist/cli.js start
-```
-
-Then change your frontend's API base URL from `http://localhost:3001` to
-`http://localhost:4560` and work normally. The dashboard is on
-`http://localhost:4561`.
-
-To get the "N files reference this endpoint" feature, set `frontendSrcDir` in
-the generated `schema-watch.config.json` to your app's `src/` folder.
-
-For dashboard hot-reload while developing Schema-Watch itself:
-
-```bash
-npm run dev:agent       # proxy :4560, API :4561
-npm run dev:dashboard   # Vite :5173, proxies /api and /ws to :4561
-```
-
-## Cloud backend (optional)
-
-The free tier is fully local and needs no account. The cloud backend adds
-history, team dashboards, Slack alerts, the CI gate, and the status badge.
-
-```bash
-cp .env.example .env      # JWT_SECRET is the only required value
-docker compose up -d      # Postgres on :5433
-cd packages/server
-npx prisma migrate deploy # applies the committed migration
-npm run dev               # API on :4000
-
-# in another terminal, the cloud app:
-npm run dev:web           # :5174, proxies /api to :4000
-```
-
-Sign up at <http://localhost:5174/signup>, create a team and project, mint an
-API key under Team, then enable `sync` in the agent's `schema-watch.config.json`.
-
-### Deploying
-
-Both halves run on Vercel from this repo, each as its own project with a
-different root directory, and Postgres is hosted on Supabase. Full settings,
-connection-string shapes and the RLS rationale are in
-[`DEPLOYING.md`](./DEPLOYING.md).
-
-The app resolves its API URL at runtime from `public/config.js` rather than at
-build time, so repointing it at a different backend is a one-line edit and a
-redeploy, with no environment variable and no rebuild.
-
-### Email
-
-Verification and password reset go through [Resend](https://resend.com). Set
-`RESEND_API_KEY`, and `EMAIL_FROM` once a sending domain is verified. With no
-key configured the server still runs and logs the link it would have sent, so
-the flow stays testable locally.
-
-Tokens are single-use, expire (24 hours for verification, 1 hour for reset),
-and only their SHA-256 hash is stored, so a leaked database backup cannot be
-used to take over an account. `forgot-password` always reports success, even
-for an unknown address, so it cannot be used to discover who has an account.
-
-Unverified users can sign in and look around, but cannot mint API keys or
-subscribe until they confirm their address.
-
-### Password policy
-
-Signup and reset require 10+ characters with upper, lower, digit and symbol,
-and reject common passwords compared with symbols and trailing digits
-stripped - otherwise the character rules just teach people to write
-"Password123!", which passes every rule and is among the most guessed strings
-there is. Login is deliberately not held to the policy, so tightening the
-rules can never lock out an existing account.
-
-`packages/server/src/lib/passwordPolicy.ts` is the authority;
-`packages/web/src/components/PasswordStrength.tsx` mirrors it so the user sees
-the same checklist while typing.
-
-### Payments
-
-Both processors are optional and independent; the server boots fine with
-neither configured, and `GET /api/billing/providers` reports what a given
-deployment can actually collect with.
-
-- **Flutterwave** - NGN and other African currencies, cards, bank transfer,
-  USSD. Required if the selling entity is Nigerian, since Stripe does not
-  onboard Nigerian businesses.
-- **Stripe** - cards/USD internationally.
-
-Plan prices live in [`packages/server/src/lib/pricing.ts`](./packages/server/src/lib/pricing.ts).
-That table is a security boundary, not display copy: webhooks check the amount
-actually paid against it before granting a plan, and Flutterwave transactions
-are re-verified against Flutterwave's API rather than trusted from the webhook
-body.
-
-## Blocking a PR when the contract breaks
-
-```bash
-# after your integration tests have driven traffic through the proxy
-schema-watch export --out contract.json
-schema-watch check --contract contract.json   # exits 1 on a breaking change
-```
-
-`examples/github-action/schema-watch.yml` is a working workflow. The gate
-requires a Pro or Team plan.
 
 ## Tests
 
@@ -175,41 +111,6 @@ npm run test --workspace packages/core
 npm run typecheck --workspaces
 ```
 
-## Status: what is and is not built
-
-**Live:** the app is at <https://schema-watch-web.vercel.app>, the API at
-<https://schema-watch-server-sigma.vercel.app>, backed by Postgres on Supabase.
-
-Working and verified end to end:
-
-- Proxy capture, shape inference, diffing, severity rules (13 unit tests)
-- Local dashboard: live WebSocket feed, diff viewer, command palette, dark/light
-- Affected-file detection
-- Cloud app: signup, login, teams, projects, API keys, billing pages. Driven in
-  a real browser against the deployed API, not just curl.
-- Email verification and password reset, via Resend. Verified against a live
-  database: forged tokens rejected, real tokens accepted, replayed tokens
-  rejected, and the old password stops working after a reset.
-- CI gate: `export` and `check`, verified to exit 1 on a real breaking change.
-- Prisma migrations, applied to the production database.
-
-Not built yet, and still needed before this can be sold:
-
-- **Payments are untested against live processors.** The code paths work and
-  reject forged webhooks, but no real Flutterwave or Stripe account, payment
-  plan, or webhook has been exercised with live credentials. Nobody has been
-  charged a real naira or dollar yet, and `/api/billing/providers` currently
-  reports both as unconfigured.
-- **No custom domain**, so verification email is sent from Resend's shared
-  `onboarding@resend.dev`. That only reaches your own address - signups from
-  real users will not receive anything until a domain is verified in Resend and
-  `EMAIL_FROM` is set.
-- **Team invites require the invitee to already have an account** - there is no
-  invitation email flow.
-- **A password reset does not end existing sessions.** JWTs are stateless and
-  last 30 days, so an attacker holding a stolen token keeps it until it expires.
-  Closing this needs a token version on the user, checked per request.
-- Cold starts on Vercel's serverless functions add roughly a second to the
-  first request, which reads as a hang on the signup button.
-- Gzip/brotli response bodies pass through correctly but are skipped for
-  diffing. Only tested on Windows and Node 24.
+The diff engine's rules are written as executable tests in
+[`packages/core/src/diff.test.ts`](./packages/core/src/diff.test.ts) - the
+fastest way to understand what the product actually does.
