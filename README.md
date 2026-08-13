@@ -136,6 +136,17 @@ The local tool is free forever and needs no account.
 | [BILLING.md](./docs/BILLING.md) | plans, processors, how pricing is enforced |
 | [ROADMAP.md](./docs/ROADMAP.md) | what is next, and what is deliberately not built |
 
+## Licensing
+
+| Path | License | What that means |
+| --- | --- | --- |
+| `packages/core`, `agent`, `ui`, `dashboard`, `web` | **Apache-2.0** | Use, modify, self-host, and ship commercially. No strings. |
+| `packages/server` | **BUSL-1.1** | Use and self-host freely, including in production. The one restriction: you may not offer it to third parties as a competing hosted contract-monitoring service. Converts to Apache-2.0 on 2030-08-13. |
+
+The detection engine and everything a developer runs on their own machine is
+straightforwardly open source. Only the cloud backend carries the
+source-available restriction, and only against reselling it as a service.
+
 ## Repo layout
 
 ```text
