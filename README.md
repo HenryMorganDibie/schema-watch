@@ -79,6 +79,36 @@ into `.github/workflows/` and it will:
 
 All using the built-in `GITHUB_TOKEN`. No secret to configure.
 
+## Open source vs Cloud
+
+**The repo helps you detect breaking changes. The Cloud helps your team
+coordinate, enforce and manage them across repositories and pull requests.**
+
+### Free, open source, self-hostable
+
+- Local proxy and live dashboard
+- Shape diffing and severity rules
+- Affected-file detection
+- `export` and `check` in your own CI, including PR comments, check runs and SARIF
+- Unlimited personal and commercial use
+
+Everything above runs with no account and no network. It is the whole
+detection engine, and it stays free.
+
+### Schema-Watch Cloud
+
+- **Cross-repository impact analysis** - one backend change, every consuming
+  repo listed with the exact files
+- GitHub App with branded PR reviews and inline comments on the changed line
+- Organization-wide policies and managed required checks
+- Hosted history and a schema timeline: *when* did `userId` become a number
+- Slack and Discord alerts
+- Team dashboards, roles and audit logs
+
+These need centralised data across repositories, hosted integrations and
+background sync. They are the parts that are genuinely painful to run
+yourself, not artificial limits on the parts that are not.
+
 ## Coming soon
 
 **Schema-Watch GitHub App** - branded PR reviews, inline contract warnings on

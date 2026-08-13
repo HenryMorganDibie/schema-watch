@@ -1099,3 +1099,15 @@ a:hover {
 .pw-strength__rules li.is-met span {
   color: var(--info);
 }
+
+/* ---------- informational notice (not an error) ---------- */
+
+.notice {
+  padding: 9px 12px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft-bg);
+  border: 1px solid var(--accent-soft-border);
+  color: var(--text-primary);
+  font-size: 12.5px;
+}

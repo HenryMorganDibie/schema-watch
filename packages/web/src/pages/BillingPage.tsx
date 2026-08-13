@@ -66,6 +66,10 @@ export function BillingPage() {
         )}
       </div>
 
+      {currency === "NGN" && providers?.stripe && (
+        <div className="notice">Naira is billed through Flutterwave. Switch to USD to pay by international card.</div>
+      )}
+
       {error && <div className="alert">{error}</div>}
       {!isOwner && <div className="alert">Only the team owner can change billing.</div>}
       {nothingConfigured && (
@@ -114,7 +118,10 @@ export function BillingPage() {
                       {pending === `${plan}-flutterwave` ? "Redirecting..." : "Pay with Flutterwave"}
                     </button>
                   )}
-                  {providers?.stripe && (
+                  {/* Stripe charges a fixed USD price id, so offering it while
+                      NGN prices are on screen would show one amount and bill
+                      another. Naira goes through Flutterwave only. */}
+                  {providers?.stripe && currency === "USD" && (
                     <button
                       className="button button--sm button--secondary"
                       disabled={!isOwner || pending !== null}

@@ -32,6 +32,28 @@ Affected frontend files:
 - src/hooks/useUser.ts
 ```
 
+**Cross-repository impact analysis.** The differentiator, and the reason the
+Cloud is not just hosting. Register several repositories, index which files
+reference which endpoints, and a backend PR can then report impact across
+every consumer:
+
+```
+Potential impact across 3 repositories
+
+web-app        src/components/UserCard.tsx, src/hooks/useUser.ts
+mobile-app     app/screens/Profile.tsx
+admin-portal   src/pages/users/[id].tsx
+```
+
+This needs repo registration, indexing workers, background sync and a
+maintained dependency graph. It cannot be reproduced by cloning the repo,
+which is precisely why it belongs in the paid tier rather than a limit on
+something that already works.
+
+**Schema approval workflow.** Acknowledge a breaking change, open a migration
+ticket, and coordinate the frontend release. Turns detection into change
+management, which is what organisations actually buy.
+
 **Team invitations by email.** Adding a member currently requires the invitee
 to already have an account.
 

@@ -20,8 +20,8 @@ export const PLAN_PRICING = {
   TEAM: {
     defaultCurrency: "USD",
     amounts: {
-      USD: 30,
-      NGN: 30_000,
+      USD: 29,
+      NGN: 29_000,
     } as Record<string, number>,
   },
 } as const satisfies Record<string, { defaultCurrency: string; amounts: Record<string, number> }>;

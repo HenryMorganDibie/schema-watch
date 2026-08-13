@@ -1,20 +1,35 @@
 # Billing
 
-## Plans
+## What is free, and why
 
-| | Free | Pro | Team |
+Detection is free and stays free: the proxy, the dashboard, shape diffing,
+affected-file detection, and the CI check including PR comments, check runs
+and SARIF. All of it runs with no account.
+
+That is deliberate. Every repository running the check is distribution, and
+goodwill lost by crippling the open-source build is much harder to recover
+than a limit is to introduce later.
+
+The paid tiers sell what is genuinely painful to run yourself: centralised
+data across repositories, hosted integrations, and team coordination.
+
+| | Free | Pro $12/mo | Team $29/user/mo |
 | --- | --- | --- | --- |
-| Local monitoring | ✅ unlimited endpoints | ✅ | ✅ |
-| Cloud history | 7 days, 1 project | unlimited | unlimited |
+| Local monitoring and dashboard | ✅ | ✅ | ✅ |
+| CI check, PR comment, SARIF | ✅ | ✅ | ✅ |
+| Hosted history and schema timeline | ❌ | ✅ | ✅ |
 | Slack / Discord alerts | ❌ | ✅ | ✅ |
-| CI gate | ❌ | ✅ | ✅ |
-| Team seats, shared dashboards | ❌ | ❌ | ✅ |
+| Cloud sync across machines | ❌ | ✅ | ✅ |
+| GitHub App, inline PR reviews | ❌ | ❌ | ✅ |
+| Cross-repository impact analysis | ❌ | ❌ | ✅ |
+| Org policies, managed required checks | ❌ | ❌ | ✅ |
+| Roles and audit logs | ❌ | ❌ | ✅ |
 
 `Team.plan` is the single source of truth. Route handlers check it through a
 plan guard rather than scattering feature flags.
 
-**The local tool is free forever and needs no account.** Paid tiers exist for
-the cloud: history, team dashboards, alerts and the CI gate.
+**`POST /api/ci/check` is deliberately available on every plan**, including
+free.
 
 ## Processors
 

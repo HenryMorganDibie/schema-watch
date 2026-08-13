@@ -19,9 +19,13 @@ interface CiCheckBody {
 /**
  * The "block the PR" endpoint. A GitHub Action posts the contract observed in
  * this branch's test run; the response's exit-worthy `pass` field is what the
- * workflow checks before allowing merge. Gated to Pro/Team - this is the
- * feature that turns "nice local tool" into "the thing that stops a bad
- * deploy," which is worth paying for.
+ * workflow checks before allowing merge.
+ *
+ * Deliberately available on every plan, including free. Detection is the
+ * adoption engine: the more repositories run this, the wider the distribution.
+ * The paid tiers sell coordination across repos and teams, not the check
+ * itself, and `schema-watch check --baseline` does the same job with no
+ * account at all.
  */
 export async function ciRoutes(app: FastifyInstance): Promise<void> {
   app.addHook("preHandler", requireApiKey);
@@ -36,10 +40,6 @@ export async function ciRoutes(app: FastifyInstance): Promise<void> {
     if (!project || project.teamId !== req.teamId) {
       return reply.code(404).send({ error: "project not found" });
     }
-    if (project.team.plan === "FREE") {
-      return reply.code(402).send({ error: "the CI gate requires a Pro or Team plan" });
-    }
-
     const results = await Promise.all(
       entries.map((entry) =>
         ingestSnapshot({
