@@ -75,6 +75,25 @@ test mode until you submit CAC business registration (the name must match your
 bank account), BVN, NIN, and a recent utility bill or tenancy agreement. No
 real payment can be received before that.
 
+## Bank transfer and the operator console
+
+Before a processor is live, payment can be taken by bank transfer. Set the
+`BANK_TRANSFER_*` variables and the details appear on the billing page; leave
+them unset and the section is hidden entirely.
+
+The customer transfers, emails proof with their team name, and the plan is
+granted from **/admin**, which is visible only to emails listed in
+`PLATFORM_ADMIN_EMAILS`. Grants are recorded with `billingProvider = MANUAL`,
+so a hand-upgraded team is never mistaken for one that paid a processor.
+
+Admin membership is read from the environment rather than a database column
+on purpose: nothing that can write to the database can promote itself. Anyone
+not on the list gets a 404 from the admin routes, so their existence is not
+advertised.
+
+Never commit real account details. This repository is public, and anything
+committed to git is published permanently.
+
 ## Environment variables
 
 ```

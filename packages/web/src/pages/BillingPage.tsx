@@ -27,7 +27,7 @@ export function BillingPage() {
   if (isLoading) return <div className="spinner-note">Loading plans...</div>;
 
   const isOwner = activeTeam.role === "OWNER";
-  const nothingConfigured = providers && !providers.stripe && !providers.flutterwave;
+  const nothingConfigured = providers && !providers.stripe && !providers.flutterwave && !providers.bankTransfer;
 
   async function startCheckout(plan: "PRO" | "TEAM", provider: "stripe" | "flutterwave") {
     setError(null);
@@ -76,6 +76,39 @@ export function BillingPage() {
         <div className="alert">
           No payment provider is configured on this server, so upgrades are disabled. Set FLUTTERWAVE_SECRET_KEY or
           STRIPE_SECRET_KEY on the API.
+        </div>
+      )}
+
+      {providers?.bankTransfer && (
+        <div className="bank-transfer">
+          <div className="bank-transfer__title">Pay by bank transfer</div>
+          <p className="bank-transfer__intro">
+            Transfer the plan amount, then email proof and your team name. Your plan is activated by hand, usually
+            within a day.
+          </p>
+          <dl className="bank-transfer__details">
+            <div>
+              <dt>Bank</dt>
+              <dd>{providers.bankTransfer.bankName}</dd>
+            </div>
+            <div>
+              <dt>Account number</dt>
+              <dd className="mono">{providers.bankTransfer.accountNumber}</dd>
+            </div>
+            <div>
+              <dt>Account name</dt>
+              <dd>{providers.bankTransfer.accountName}</dd>
+            </div>
+            {providers.bankTransfer.contactEmail && (
+              <div>
+                <dt>Send proof to</dt>
+                <dd>{providers.bankTransfer.contactEmail}</dd>
+              </div>
+            )}
+          </dl>
+          <p className="bank-transfer__note">
+            Include your team name <strong>{activeTeam.name}</strong> in the transfer narration so it can be matched.
+          </p>
         </div>
       )}
 

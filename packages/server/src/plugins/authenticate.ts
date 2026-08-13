@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { hashApiKey } from "../lib/apiKey.js";
 import { verifyToken } from "../lib/jwt.js";
+import { isPlatformAdmin } from "../lib/platformAdmin.js";
 import { prisma } from "../lib/prisma.js";
 
 declare module "fastify" {
@@ -34,6 +35,19 @@ export async function requireVerifiedEmail(req: FastifyRequest, reply: FastifyRe
   const user = await prisma.user.findUnique({ where: { id: req.userId }, select: { emailVerified: true } });
   if (!user?.emailVerified) {
     return reply.code(403).send({ error: "verify your email address first", code: "EMAIL_NOT_VERIFIED" });
+  }
+}
+
+/**
+ * Guards the operator-only admin surface. Run after requireUser.
+ *
+ * Returns 404 rather than 403 for non-admins, so the existence of the admin
+ * routes is not advertised to anyone probing the API.
+ */
+export async function requirePlatformAdmin(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } });
+  if (!isPlatformAdmin(user?.email)) {
+    return reply.code(404).send({ error: "not found" });
   }
 }
 

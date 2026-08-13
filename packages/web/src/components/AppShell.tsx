@@ -26,6 +26,11 @@ export function AppShell() {
           <NavLink to="/billing" className={({ isActive }) => `nav__link ${isActive ? "nav__link--active" : ""}`}>
             Billing
           </NavLink>
+          {user?.isPlatformAdmin && (
+            <NavLink to="/admin" className={({ isActive }) => `nav__link ${isActive ? "nav__link--active" : ""}`}>
+              Admin
+            </NavLink>
+          )}
         </div>
 
         <div className="nav__right">

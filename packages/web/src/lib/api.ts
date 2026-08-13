@@ -66,6 +66,7 @@ export interface Me {
   email: string;
   name: string | null;
   emailVerified: boolean;
+  isPlatformAdmin: boolean;
   teams: { id: string; name: string; slug: string; plan: Plan; role: TeamRole }[];
 }
 
@@ -86,13 +87,41 @@ export interface ApiKeySummary {
   createdAt: string;
 }
 
+export interface BankTransfer {
+  accountName: string;
+  accountNumber: string;
+  bankName: string;
+  contactEmail: string;
+  currency: string;
+}
+
 export interface BillingProviders {
   stripe: boolean;
   flutterwave: boolean;
+  bankTransfer: BankTransfer | null;
   pricing: Record<string, { defaultCurrency: string; amounts: Record<string, number> }>;
 }
 
+export interface AdminTeam {
+  id: string;
+  name: string;
+  slug: string;
+  plan: Plan;
+  billingProvider: string | null;
+  projectCount: number;
+  createdAt: string;
+  members: { email: string; role: TeamRole; emailVerified: boolean }[];
+}
+
 export const api = {
+  adminListTeams: () => request<AdminTeam[]>("/api/admin/teams"),
+
+  adminSetPlan: (teamId: string, plan: Plan) =>
+    request<{ id: string; plan: Plan }>(`/api/admin/teams/${teamId}/plan`, {
+      method: "POST",
+      body: JSON.stringify({ plan, manual: true }),
+    }),
+
   verifyEmail: (token: string) =>
     request<{ verified: true }>("/api/auth/verify-email", { method: "POST", body: JSON.stringify({ token }) }),
 

@@ -3,6 +3,7 @@ import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 import { checkPassword } from "../lib/passwordPolicy.js";
 import { signToken } from "../lib/jwt.js";
+import { isPlatformAdmin } from "../lib/platformAdmin.js";
 import { prisma } from "../lib/prisma.js";
 import { consumeToken, issueToken } from "../lib/tokens.js";
 import { requireUser } from "../plugins/authenticate.js";
@@ -72,6 +73,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       email: user.email,
       name: user.name,
       emailVerified: user.emailVerified,
+      isPlatformAdmin: isPlatformAdmin(user.email),
       teams: user.memberships.map((m) => ({
         id: m.team.id,
         name: m.team.name,

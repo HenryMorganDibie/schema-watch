@@ -50,6 +50,9 @@ enum IntegrationType {
 enum BillingProvider {
   STRIPE
   FLUTTERWAVE
+  // Paid by bank transfer and granted by hand. Recorded explicitly so a
+  // manually upgraded team is never mistaken for one that paid a processor.
+  MANUAL
 }
 
 model User {

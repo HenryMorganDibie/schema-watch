@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { useAuth } from "./lib/auth";
+import { AdminPage } from "./pages/AdminPage";
 import { AuthPage } from "./pages/AuthPage";
 import { BillingPage } from "./pages/BillingPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
         <Route path="/team" element={<TeamPage />} />
         <Route path="/billing" element={<BillingPage />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

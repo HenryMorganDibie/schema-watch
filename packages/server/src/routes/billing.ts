@@ -8,6 +8,7 @@ import {
   verifyTransaction,
   verifyWebhookSignature,
 } from "../lib/flutterwave.js";
+import { bankTransferDetails } from "../lib/bankTransfer.js";
 import { requireMembership } from "../lib/membership.js";
 import { PLAN_PRICING } from "../lib/pricing.js";
 import { prisma } from "../lib/prisma.js";
@@ -23,6 +24,8 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
   app.get("/providers", async () => ({
     stripe: isStripeConfigured(),
     flutterwave: isFlutterwaveConfigured(),
+    // Public by design: a customer cannot pay without seeing where to send it.
+    bankTransfer: bankTransferDetails(),
     pricing: PLAN_PRICING,
   }));
 
