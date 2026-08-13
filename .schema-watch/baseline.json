@@ -1,0 +1,171 @@
+[
+  {
+    "method": "GET",
+    "pathPattern": "/",
+    "target": "response",
+    "statusCode": 200,
+    "schema": {
+      "kind": "object",
+      "properties": {
+        "service": {
+          "required": true,
+          "schema": {
+            "kind": "primitive",
+            "type": "string",
+            "nullable": false
+          }
+        },
+        "docs": {
+          "required": true,
+          "schema": {
+            "kind": "primitive",
+            "type": "string",
+            "nullable": false
+          }
+        }
+      },
+      "nullable": false
+    }
+  },
+  {
+    "method": "GET",
+    "pathPattern": "/api/billing/providers",
+    "target": "response",
+    "statusCode": 200,
+    "schema": {
+      "kind": "object",
+      "properties": {
+        "stripe": {
+          "required": true,
+          "schema": {
+            "kind": "primitive",
+            "type": "boolean",
+            "nullable": false
+          }
+        },
+        "flutterwave": {
+          "required": true,
+          "schema": {
+            "kind": "primitive",
+            "type": "boolean",
+            "nullable": false
+          }
+        },
+        "pricing": {
+          "required": true,
+          "schema": {
+            "kind": "object",
+            "properties": {
+              "PRO": {
+                "required": true,
+                "schema": {
+                  "kind": "object",
+                  "properties": {
+                    "defaultCurrency": {
+                      "required": true,
+                      "schema": {
+                        "kind": "primitive",
+                        "type": "string",
+                        "nullable": false
+                      }
+                    },
+                    "amounts": {
+                      "required": true,
+                      "schema": {
+                        "kind": "object",
+                        "properties": {
+                          "USD": {
+                            "required": true,
+                            "schema": {
+                              "kind": "primitive",
+                              "type": "number",
+                              "nullable": false
+                            }
+                          },
+                          "NGN": {
+                            "required": true,
+                            "schema": {
+                              "kind": "primitive",
+                              "type": "number",
+                              "nullable": false
+                            }
+                          }
+                        },
+                        "nullable": false
+                      }
+                    }
+                  },
+                  "nullable": false
+                }
+              },
+              "TEAM": {
+                "required": true,
+                "schema": {
+                  "kind": "object",
+                  "properties": {
+                    "defaultCurrency": {
+                      "required": true,
+                      "schema": {
+                        "kind": "primitive",
+                        "type": "string",
+                        "nullable": false
+                      }
+                    },
+                    "amounts": {
+                      "required": true,
+                      "schema": {
+                        "kind": "object",
+                        "properties": {
+                          "USD": {
+                            "required": true,
+                            "schema": {
+                              "kind": "primitive",
+                              "type": "number",
+                              "nullable": false
+                            }
+                          },
+                          "NGN": {
+                            "required": true,
+                            "schema": {
+                              "kind": "primitive",
+                              "type": "number",
+                              "nullable": false
+                            }
+                          }
+                        },
+                        "nullable": false
+                      }
+                    }
+                  },
+                  "nullable": false
+                }
+              }
+            },
+            "nullable": false
+          }
+        }
+      },
+      "nullable": false
+    }
+  },
+  {
+    "method": "GET",
+    "pathPattern": "/api/health",
+    "target": "response",
+    "statusCode": 200,
+    "schema": {
+      "kind": "object",
+      "properties": {
+        "ok": {
+          "required": true,
+          "schema": {
+            "kind": "primitive",
+            "type": "boolean",
+            "nullable": false
+          }
+        }
+      },
+      "nullable": false
+    }
+  }
+]

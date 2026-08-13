@@ -1,0 +1,60 @@
+# Schema-Watch watching its own API.
+#
+# Captures the deployed API's contract and compares it against the baseline
+# committed in .schema-watch/baseline.json. If a change to this repository
+# alters the shape of a response, the check fails and comments on the PR.
+#
+# Needs no secrets: only unauthenticated endpoints are exercised.
+
+name: schema-watch
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  security-events: write
+
+jobs:
+  contract-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build --workspace packages/core && npm run build --workspace packages/agent
+
+      - name: Capture the live API contract
+        run: node scripts/ci-capture.mjs contract.json
+
+      - name: Check against the baseline
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node packages/agent/dist/cli.js check \
+            --contract contract.json \
+            --baseline .schema-watch/baseline.json \
+            --frontend-src packages/web/src \
+            --sarif schema-watch.sarif
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: schema-watch.sarif
+
+      - name: Upload the captured contract
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-watch-contract
+          path: contract.json
