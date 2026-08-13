@@ -1,5 +1,8 @@
 # Schema-Watch
 
+[![schema-watch](https://github.com/HenryMorganDibie/schema-watch/actions/workflows/schema-watch.yml/badge.svg)](https://github.com/HenryMorganDibie/schema-watch/actions/workflows/schema-watch.yml)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
+
 **Catch breaking API changes before your frontend breaks.**
 
 The backend changes `userId` from a string to a number. Nothing throws. You
@@ -78,6 +81,15 @@ into `.github/workflows/` and it will:
 - **upload SARIF** so findings appear in the Security tab beside static analysis
 
 All using the built-in `GITHUB_TOKEN`. No secret to configure.
+
+## We run it on ourselves
+
+This repository's own CI captures the contract of the deployed Schema-Watch
+API on every pull request and compares it against a committed baseline. The
+workflow is [`.github/workflows/schema-watch.yml`](./.github/workflows/schema-watch.yml),
+and [PR #1](https://github.com/HenryMorganDibie/schema-watch/pull/1) is a
+deliberate contract break kept open so you can see the failing check, the bot
+comment and the SARIF findings for yourself.
 
 ## Open source vs Cloud
 
