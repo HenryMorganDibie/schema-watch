@@ -1,7 +1,14 @@
 # Security
 
-How authentication, tokens and secrets are handled, and where the known gaps
-are. If you find something not listed here, open an issue.
+## Reporting a vulnerability
+
+Please do not open a public issue for a security problem. Use GitHub's
+[private vulnerability reporting](https://github.com/HenryMorganDibie/schema-watch/security/advisories/new),
+or email henrymorgandibie@gmail.com. Expect an acknowledgement within a few
+days.
+
+The rest of this document describes how authentication, tokens and secrets are
+handled, and where the known gaps are.
 
 ## Passwords
 

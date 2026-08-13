@@ -33,7 +33,7 @@ processor took the money.
 ## Prices are a security boundary
 
 Plan prices live in
-[`packages/server/src/lib/pricing.ts`](./packages/server/src/lib/pricing.ts).
+[`packages/server/src/lib/pricing.ts`](../packages/server/src/lib/pricing.ts).
 That table is not display copy: the webhook handlers compare the amount
 actually paid against it before granting a plan, and reject underpayment.
 

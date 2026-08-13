@@ -63,12 +63,26 @@ Set `frontendSrcDir` in the generated `schema-watch.config.json` to your app's
 
 ## Use it in CI
 
+No account required. Commit a baseline contract, then compare against it:
+
 ```bash
 schema-watch export --out contract.json
-schema-watch check --contract contract.json   # exits 1 on a breaking change
+schema-watch check   --contract contract.json   --baseline .schema-watch/baseline.json   --frontend-src src   --sarif schema-watch.sarif     # exits 1 on a breaking change
 ```
 
-`examples/github-action/schema-watch.yml` is a working workflow.
+Copy [`examples/github-action/schema-watch.yml`](./examples/github-action/schema-watch.yml)
+into `.github/workflows/` and it will:
+
+- **comment on the PR** with a diff of what changed and which files reference it
+- **publish a check run** you can require in branch protection to block merges
+- **upload SARIF** so findings appear in the Security tab beside static analysis
+
+All using the built-in `GITHUB_TOKEN`. No secret to configure.
+
+## Coming soon
+
+**Schema-Watch GitHub App** - branded PR reviews, inline contract warnings on
+the exact changed line, and organization-wide policy enforcement.
 
 ## Current status
 
@@ -86,11 +100,11 @@ The local tool is free forever and needs no account.
 
 | | |
 | --- | --- |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | system design, database schema, API surface |
-| [DEPLOYING.md](./DEPLOYING.md) | hosting the cloud backend and app |
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | system design, database schema, API surface |
+| [DEPLOYING.md](./docs/DEPLOYING.md) | hosting the cloud backend and app |
 | [SECURITY.md](./SECURITY.md) | auth, tokens, password policy, known gaps |
-| [BILLING.md](./BILLING.md) | plans, processors, how pricing is enforced |
-| [ROADMAP.md](./ROADMAP.md) | what is next, and what is deliberately not built |
+| [BILLING.md](./docs/BILLING.md) | plans, processors, how pricing is enforced |
+| [ROADMAP.md](./docs/ROADMAP.md) | what is next, and what is deliberately not built |
 
 ## Repo layout
 

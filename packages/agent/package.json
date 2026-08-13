@@ -14,7 +14,8 @@
     "build": "tsc -p tsconfig.json",
     "bundle": "node scripts/bundle-dashboard.mjs",
     "prepack": "npm run build && npm run bundle",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test src/ci/compare.test.ts"
   },
   "dependencies": {
     "@schema-watch/core": "*",

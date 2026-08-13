@@ -28,7 +28,17 @@ const DEFAULTS: Omit<AgentConfig, "target"> = {
   sync: { enabled: false },
 };
 
-export function loadConfig(cwd: string = process.cwd()): AgentConfig {
+export function loadConfig(options?: { optional?: boolean; cwd?: string }): AgentConfig;
+export function loadConfig(cwd: string): AgentConfig;
+/**
+ * `optional` is for CI, where `check --baseline` compares two files and needs
+ * no proxy target at all. Everywhere else a missing target is a hard error,
+ * since the agent cannot do anything useful without one.
+ */
+export function loadConfig(arg?: string | { optional?: boolean; cwd?: string }): AgentConfig | null {
+  const options = typeof arg === "string" ? { cwd: arg } : (arg ?? {});
+  const cwd = options.cwd ?? process.cwd();
+  const optional = "optional" in options ? options.optional : false;
   const configPath = path.join(cwd, CONFIG_FILENAME);
   let fileConfig: Partial<AgentConfig> = {};
 
@@ -38,6 +48,7 @@ export function loadConfig(cwd: string = process.cwd()): AgentConfig {
 
   const target = fileConfig.target ?? process.env.SCHEMA_WATCH_TARGET;
   if (!target) {
+    if (optional) return null;
     throw new Error(
       `No proxy target configured. Run "schema-watch init" to create ${CONFIG_FILENAME}, ` +
         `or set SCHEMA_WATCH_TARGET=http://localhost:PORT`,

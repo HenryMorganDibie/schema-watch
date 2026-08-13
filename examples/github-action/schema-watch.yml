@@ -1,21 +1,21 @@
-# Blocks a PR when the API contract breaks.
+# Schema-Watch contract check.
 #
-# Drop this into .github/workflows/ in the repo you want gated, set the
-# SCHEMA_WATCH_API_KEY secret (mint one in the dashboard under Team > API keys)
-# and the SCHEMA_WATCH_PROJECT_ID variable, then mark "contract-check" as a
-# required status check in branch protection.
+# Copy this to .github/workflows/schema-watch.yml
 #
-# How it works: your integration tests run against the Schema-Watch proxy
-# instead of your API directly, so every response gets captured. `check` then
-# sends that contract to the server, which diffs it against the last known
-# good one and exits 1 if anything breaking slipped in.
+# It needs no Schema-Watch account: the check compares this branch's contract
+# against a baseline committed in your repo. Regenerate that baseline whenever
+# you intend to change the contract.
 
-name: API contract
+name: schema-watch
 
 on:
   pull_request:
-  push:
-    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write # post the report comment
+  checks: write # publish the check run you can require in branch protection
+  security-events: write # upload SARIF to the Security tab
 
 jobs:
   contract-check:
@@ -25,33 +25,39 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: 22
 
       - run: npm ci
 
-      - name: Start your API
-        run: npm run start:test-api &
+      # Drive traffic through the proxy so there is a contract to compare.
+      # Point your app's API base URL at http://localhost:4560 in test config.
+      - run: npm test
 
-      - name: Start the Schema-Watch proxy
+      - run: npx schema-watch export --out contract.json
+
+      - name: Check the contract
         env:
-          # Point the proxy at your real API; tests then talk to :4560.
-          SCHEMA_WATCH_TARGET: http://localhost:3001
+          # Provided automatically; no secret to configure.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npx schema-watch init --target "$SCHEMA_WATCH_TARGET" || true
-          npx schema-watch start &
-          npx wait-on http://localhost:4561/api/health
+          npx schema-watch check \
+            --contract contract.json \
+            --baseline .schema-watch/baseline.json \
+            --frontend-src src \
+            --sarif schema-watch.sarif
 
-      - name: Run integration tests through the proxy
-        env:
-          # Whatever env var your test suite uses for the API base URL.
-          API_BASE_URL: http://localhost:4560
-        run: npm run test:integration
+      # Findings then appear in the Security tab beside static-analysis
+      # results. Runs even when the check failed, which is when it matters.
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: schema-watch.sarif
 
-      - name: Check for breaking contract changes
-        env:
-          SCHEMA_WATCH_SYNC_API_KEY: ${{ secrets.SCHEMA_WATCH_API_KEY }}
-          SCHEMA_WATCH_SYNC_PROJECT_ID: ${{ vars.SCHEMA_WATCH_PROJECT_ID }}
-          SCHEMA_WATCH_CLOUD_URL: https://api.schema-watch.dev
-        # Exits 1 on a breaking change, which fails the job and blocks the PR.
-        run: npx schema-watch check
+      # Keep the diff for inspection when the check fails.
+      - name: Upload contract
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-watch-contract
+          path: contract.json
