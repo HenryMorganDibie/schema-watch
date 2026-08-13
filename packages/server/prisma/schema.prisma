@@ -61,6 +61,10 @@ model User {
   passwordHash  String
   name          String?
   emailVerified Boolean             @default(false)
+  // Bumped on password reset. Every JWT carries the version it was signed
+  // with, so raising this invalidates all existing sessions at once - the
+  // only way to log out a stolen stateless token before it expires.
+  tokenVersion  Int                 @default(0)
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   memberships   TeamMember[]
@@ -180,6 +184,20 @@ model ContractChange {
   createdAt      DateTime       @default(now())
 
   @@index([endpointId, createdAt])
+}
+
+// Fixed-window counters for rate limiting. Kept in Postgres rather than in
+// memory because the API runs as serverless functions: an in-process counter
+// would reset on every cold start and never be shared between instances,
+// which is exactly the case an attacker benefits from.
+model RateLimit {
+  id        String   @id @default(cuid())
+  bucket    String
+  windowEnd DateTime
+  count     Int      @default(1)
+
+  @@unique([bucket, windowEnd])
+  @@index([windowEnd])
 }
 
 model Integration {

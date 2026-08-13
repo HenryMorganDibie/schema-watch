@@ -5,6 +5,7 @@ import { checkPassword } from "../lib/passwordPolicy.js";
 import { signToken } from "../lib/jwt.js";
 import { isPlatformAdmin } from "../lib/platformAdmin.js";
 import { prisma } from "../lib/prisma.js";
+import { RATE_LIMITS, clientIp, enforceRateLimit } from "../lib/rateLimit.js";
 import { consumeToken, issueToken } from "../lib/tokens.js";
 import { requireUser } from "../plugins/authenticate.js";
 
@@ -20,6 +21,8 @@ function normalizeEmail(email: string): string {
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: AuthBody }>("/signup", async (req, reply) => {
+    if (await enforceRateLimit(req, reply, RATE_LIMITS.signupByIp, clientIp(req))) return;
+
     const { email, password, name } = req.body ?? {};
     if (!email || !password) return reply.code(400).send({ error: "email and password are required" });
 
@@ -44,19 +47,25 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     }
 
     return reply.code(201).send({
-      token: signToken({ userId: user.id }),
+      token: signToken({ userId: user.id, tokenVersion: user.tokenVersion }),
       user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified },
     });
   });
 
   app.post<{ Body: AuthBody }>("/login", async (req, reply) => {
     const { email, password } = req.body ?? {};
+    if (await enforceRateLimit(req, reply, RATE_LIMITS.loginByIp, clientIp(req))) return;
+    // Also per account, so an attacker spreading attempts across addresses
+    // still cannot grind a single password, and one noisy IP cannot lock
+    // every other user out.
+    if (email && (await enforceRateLimit(req, reply, RATE_LIMITS.loginByEmail, normalizeEmail(email)))) return;
+
     const user = email ? await prisma.user.findUnique({ where: { email: normalizeEmail(email) } }) : null;
     if (!user || !(await verifyPassword(password ?? "", user.passwordHash))) {
       return reply.code(401).send({ error: "invalid email or password" });
     }
     return reply.send({
-      token: signToken({ userId: user.id }),
+      token: signToken({ userId: user.id, tokenVersion: user.tokenVersion }),
       user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified },
     });
   });
@@ -96,6 +105,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post("/verify-email/resend", { preHandler: requireUser }, async (req, reply) => {
+    if (await enforceRateLimit(req, reply, RATE_LIMITS.resendByUser, req.userId!)) return;
+
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return reply.code(404).send({ error: "not found" });
     if (user.emailVerified) return reply.send({ alreadyVerified: true });
@@ -117,6 +128,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: { email: string } }>("/forgot-password", async (req, reply) => {
     const { email } = req.body ?? {};
     if (!email) return reply.code(400).send({ error: "email is required" });
+    if (await enforceRateLimit(req, reply, RATE_LIMITS.forgotByIp, clientIp(req))) return;
+    if (await enforceRateLimit(req, reply, RATE_LIMITS.forgotByEmail, normalizeEmail(email))) return;
 
     const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
     if (user) {
@@ -131,6 +144,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post<{ Body: { token: string; password: string } }>("/reset-password", async (req, reply) => {
+    if (await enforceRateLimit(req, reply, RATE_LIMITS.resetByIp, clientIp(req))) return;
+
     const { token, password } = req.body ?? {};
     if (!token || !password) return reply.code(400).send({ error: "token and password are required" });
 
@@ -143,13 +158,21 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     // Completing a reset proves control of the inbox, so treat the address as
     // verified too - otherwise a user who never clicked the original link
     // would still be stuck behind the unverified gate.
+    // Bumping tokenVersion invalidates every JWT issued before this reset, so
+    // an attacker holding a stolen token loses access the moment the real
+    // owner recovers the account. The response carries a freshly versioned
+    // token so the person doing the reset stays signed in.
     const user = await prisma.user.update({
       where: { id: consumed.userId },
-      data: { passwordHash: await hashPassword(password), emailVerified: true },
+      data: {
+        passwordHash: await hashPassword(password),
+        emailVerified: true,
+        tokenVersion: { increment: 1 },
+      },
     });
 
     return reply.send({
-      token: signToken({ userId: user.id }),
+      token: signToken({ userId: user.id, tokenVersion: user.tokenVersion }),
       user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified },
     });
   });

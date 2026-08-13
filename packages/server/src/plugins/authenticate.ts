@@ -11,18 +11,39 @@ declare module "fastify" {
   }
 }
 
-/** Interactive routes: browser calls with `Authorization: Bearer <jwt>`. */
+/**
+ * Interactive routes: browser calls with `Authorization: Bearer <jwt>`.
+ *
+ * Verifying the signature is not enough. The token's version is checked
+ * against the stored one so a password reset can revoke sessions that were
+ * issued before it - otherwise a stolen token outlives the reset meant to
+ * stop it. That costs one primary-key lookup per authenticated request.
+ */
 export async function requireUser(req: FastifyRequest, reply: FastifyReply): Promise<void> {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
     return reply.code(401).send({ error: "missing bearer token" });
   }
+
+  let payload;
   try {
-    const payload = verifyToken(header.slice("Bearer ".length));
-    req.userId = payload.userId;
+    payload = verifyToken(header.slice("Bearer ".length));
   } catch {
     return reply.code(401).send({ error: "invalid or expired token" });
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { tokenVersion: true },
+  });
+  if (!user) {
+    return reply.code(401).send({ error: "invalid or expired token" });
+  }
+  if (user.tokenVersion !== payload.tokenVersion) {
+    return reply.code(401).send({ error: "session ended, please sign in again", code: "SESSION_REVOKED" });
+  }
+
+  req.userId = payload.userId;
 }
 
 /**
