@@ -82,7 +82,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       email: user.email,
       name: user.name,
       emailVerified: user.emailVerified,
-      isPlatformAdmin: isPlatformAdmin(user.email),
+      isPlatformAdmin: user.emailVerified && isPlatformAdmin(user.email),
       teams: user.memberships.map((m) => ({
         id: m.team.id,
         name: m.team.name,

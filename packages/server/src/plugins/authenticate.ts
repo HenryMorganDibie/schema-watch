@@ -66,8 +66,17 @@ export async function requireVerifiedEmail(req: FastifyRequest, reply: FastifyRe
  * routes is not advertised to anyone probing the API.
  */
 export async function requirePlatformAdmin(req: FastifyRequest, reply: FastifyReply): Promise<void> {
-  const user = await prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } });
-  if (!isPlatformAdmin(user?.email)) {
+  const user = await prisma.user.findUnique({
+    where: { id: req.userId },
+    select: { email: true, emailVerified: true },
+  });
+
+  // Verification is required as well as membership. Listing an address in
+  // PLATFORM_ADMIN_EMAILS before an account exists for it would otherwise let
+  // whoever registers that address first become an operator, since signup
+  // hands back a working session immediately. Requiring a confirmed inbox
+  // means claiming the address is not enough.
+  if (!user?.emailVerified || !isPlatformAdmin(user.email)) {
     return reply.code(404).send({ error: "not found" });
   }
 }
