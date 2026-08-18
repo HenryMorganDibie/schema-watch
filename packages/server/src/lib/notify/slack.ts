@@ -10,7 +10,7 @@ export function buildSlackPayload(n: ContractChangeNotification): object {
 
   const affected =
     n.affectedFiles.length > 0
-      ? `\n\n_${n.affectedFiles.length} file${n.affectedFiles.length === 1 ? "" : "s"} reference this endpoint:_ ${n.affectedFiles
+      ? `\n\n_${n.affectedFiles.length} ${n.affectedFiles.length === 1 ? "file references" : "files reference"} this endpoint:_ ${n.affectedFiles
           .slice(0, 6)
           .map((f) => `\`${f}\``)
           .join(", ")}`

@@ -1,7 +1,12 @@
 # Schema-Watch
 
 [![schema-watch](https://github.com/HenryMorganDibie/schema-watch/actions/workflows/schema-watch.yml/badge.svg)](https://github.com/HenryMorganDibie/schema-watch/actions/workflows/schema-watch.yml)
-[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
+[![core license](https://img.shields.io/badge/core-Apache--2.0-blue)](./LICENSE)
+[![server license](https://img.shields.io/badge/server-BUSL--1.1-orange)](./packages/server/LICENSE)
+
+> **⚠️ Licensing:** the open-source packages (`core`, `agent`, `ui`, `dashboard`, `web`) are **Apache-2.0**.
+> The hosted Cloud backend (`packages/server`) is licensed separately under **BUSL-1.1**.
+> GitHub's repository label shows only the root license. See [Licensing](#licensing).
 
 **Catch breaking API changes before your frontend breaks.**
 
