@@ -3,7 +3,7 @@ import type { BodyTarget as CoreBodyTarget, ChangeSeverity, SchemaChange, Schema
 import { hashSchema } from "@schema-watch/core/node";
 import type { Prisma, BodyTarget as PrismaBodyTarget } from "@prisma/client";
 import { prisma } from "./prisma.js";
-import { sendSlackNotification } from "./slack.js";
+import { notifyProject } from "./notify/index.js";
 
 export interface IngestParams {
   projectId: string;
@@ -93,45 +93,16 @@ export async function ingestSnapshot(params: IngestParams): Promise<IngestResult
     },
   });
 
-  await fanOutIntegrations({
-    projectId: params.projectId,
+  // Never let a broken webhook fail the ingest that triggered it.
+  await notifyProject(params.projectId, {
     projectName: params.projectName,
     method: params.method,
     pathPattern: params.pathPattern,
+    target: params.target,
     severity,
     changes,
     affectedFiles,
-  });
+  }).catch(() => {});
 
   return { endpointId: endpoint.id, change: { id: changeRow.id, severity, changes, affectedFiles } };
-}
-
-async function fanOutIntegrations(args: {
-  projectId: string;
-  projectName: string;
-  method: string;
-  pathPattern: string;
-  severity: ChangeSeverity;
-  changes: SchemaChange[];
-  affectedFiles: string[];
-}): Promise<void> {
-  if (args.severity !== "BREAKING") return;
-
-  const integrations = await prisma.integration.findMany({ where: { projectId: args.projectId, type: "SLACK" } });
-  for (const integration of integrations) {
-    const config = integration.config as { webhookUrl?: string };
-    if (!config.webhookUrl) continue;
-    try {
-      await sendSlackNotification(config.webhookUrl, {
-        method: args.method,
-        pathPattern: args.pathPattern,
-        severity: args.severity,
-        changes: args.changes,
-        affectedFiles: args.affectedFiles,
-        projectName: args.projectName,
-      });
-    } catch (err) {
-      console.error(`[schema-watch] Slack notify failed for integration ${integration.id}:`, err);
-    }
-  }
 }

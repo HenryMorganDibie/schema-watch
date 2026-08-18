@@ -133,6 +133,7 @@ the exact changed line, and organization-wide policy enforcement.
 - ✅ Affected-file detection
 - ✅ CI contract checks
 - ✅ Accounts, email verification, password reset
+- ✅ Slack and Discord alerts with delivery tracking
 - 🚧 Team collaboration features in progress
 - 🚧 Production payment integrations in progress
 

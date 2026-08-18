@@ -12,6 +12,16 @@ What is shipped, what is next, and what is deliberately not being built.
 - Email verification and password reset
 - CI gate that exits non-zero on a breaking change
 
+## Integrations
+
+Slack and Discord are delivered end to end: provider-correct payloads, a
+per-integration severity threshold, a test-send button, a delivery log, and
+auto-disable after five consecutive failures.
+
+`GITHUB` remains in the database enum for historical reasons but the API
+rejects it, pointing at the GitHub Action instead, which posts PR comments
+and check runs for free. A branded GitHub App is the paid successor.
+
 ## Next
 
 **GitHub PR comment bot.** The CI gate already detects breaking changes and

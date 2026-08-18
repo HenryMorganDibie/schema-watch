@@ -87,6 +87,29 @@ export interface ApiKeySummary {
   createdAt: string;
 }
 
+export type Severity = "BREAKING" | "WARNING" | "INFO";
+
+export interface IntegrationSummary {
+  id: string;
+  type: "SLACK" | "DISCORD";
+  enabled: boolean;
+  minSeverity: Severity;
+  consecutiveFailures: number;
+  lastError: string | null;
+  lastDeliveryAt: string | null;
+  webhookHost: string | null;
+  createdAt: string;
+}
+
+export interface DeliveryRecord {
+  id: string;
+  status: "SUCCESS" | "FAILED";
+  statusCode: number | null;
+  summary: string;
+  error: string | null;
+  createdAt: string;
+}
+
 export interface BankTransfer {
   accountName: string;
   accountNumber: string;
@@ -186,11 +209,29 @@ export const api = {
       body: JSON.stringify({ teamId, plan, currency }),
     }),
 
-  addIntegration: (projectId: string, webhookUrl: string, type: "SLACK" | "DISCORD") =>
-    request(`/api/projects/${projectId}/integrations`, {
+  listIntegrations: (projectId: string) =>
+    request<IntegrationSummary[]>(`/api/projects/${projectId}/integrations`),
+
+  addIntegration: (projectId: string, type: "SLACK" | "DISCORD", webhookUrl: string, minSeverity: Severity) =>
+    request<IntegrationSummary>(`/api/projects/${projectId}/integrations`, {
       method: "POST",
-      body: JSON.stringify({ type, webhookUrl }),
+      body: JSON.stringify({ type, webhookUrl, minSeverity }),
     }),
+
+  testIntegration: (projectId: string, integrationId: string) =>
+    request<{ delivered: true }>(`/api/projects/${projectId}/integrations/${integrationId}/test`, { method: "POST" }),
+
+  updateIntegration: (projectId: string, integrationId: string, patch: { enabled?: boolean; minSeverity?: Severity }) =>
+    request<IntegrationSummary>(`/api/projects/${projectId}/integrations/${integrationId}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+
+  deleteIntegration: (projectId: string, integrationId: string) =>
+    request<void>(`/api/projects/${projectId}/integrations/${integrationId}`, { method: "DELETE" }),
+
+  listDeliveries: (projectId: string, integrationId: string) =>
+    request<DeliveryRecord[]>(`/api/projects/${projectId}/integrations/${integrationId}/deliveries`),
 };
 
 export { API_BASE };

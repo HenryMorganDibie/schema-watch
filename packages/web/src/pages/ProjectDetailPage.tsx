@@ -2,6 +2,7 @@ import { ChangeCard, DiffViewer, EndpointRow, type ContractChangeView } from "@s
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Integrations } from "../components/Integrations";
 import { api, API_BASE } from "../lib/api";
 
 export function ProjectDetailPage() {
@@ -71,6 +72,8 @@ export function ProjectDetailPage() {
           )}
         </>
       )}
+
+      <Integrations projectId={projectId!} />
 
       <div className="section-title">Status badge</div>
       <div className="card">

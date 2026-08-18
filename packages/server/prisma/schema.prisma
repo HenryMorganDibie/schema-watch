@@ -200,11 +200,42 @@ model RateLimit {
   @@index([windowEnd])
 }
 
+enum DeliveryStatus {
+  SUCCESS
+  FAILED
+}
+
 model Integration {
   id        String          @id @default(cuid())
   project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId String
   type      IntegrationType
   config    Json
+  enabled   Boolean         @default(true)
+  // Only changes at or above this severity are delivered. Defaults to
+  // BREAKING so a new webhook does not immediately become noise.
+  minSeverity ChangeSeverity @default(BREAKING)
+  // A webhook that has been deleted on the far end fails forever; after
+  // enough consecutive failures it is disabled rather than retried on every
+  // contract change.
+  consecutiveFailures Int    @default(0)
+  lastError      String?
+  lastDeliveryAt DateTime?
   createdAt DateTime        @default(now())
+  deliveries IntegrationDelivery[]
+}
+
+// One row per delivery attempt. Without this a failed notification is
+// invisible: the user believes their team was alerted when nothing arrived.
+model IntegrationDelivery {
+  id            String         @id @default(cuid())
+  integration   Integration    @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  integrationId String
+  status        DeliveryStatus
+  statusCode    Int?
+  summary       String
+  error         String?
+  createdAt     DateTime       @default(now())
+
+  @@index([integrationId, createdAt])
 }
