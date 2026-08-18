@@ -151,14 +151,27 @@ The local tool is free forever and needs no account.
 
 ## Licensing
 
-| Path | License | What that means |
-| --- | --- | --- |
-| `packages/core`, `agent`, `ui`, `dashboard`, `web` | **Apache-2.0** | Use, modify, self-host, and ship commercially. No strings. |
-| `packages/server` | **BUSL-1.1** | Use and self-host freely, including in production. The one restriction: you may not offer it to third parties as a competing hosted contract-monitoring service. Converts to Apache-2.0 on 2030-08-13. |
+### Open Source
 
-The detection engine and everything a developer runs on their own machine is
-straightforwardly open source. Only the cloud backend carries the
-source-available restriction, and only against reselling it as a service.
+Schema-Watch's local detection engine, CLI, agent and UI are available under
+**Apache-2.0**. Use, modify, self-host and ship commercially, with no strings.
+
+That covers `packages/core`, `packages/agent`, `packages/ui`,
+`packages/dashboard` and `packages/web` - everything a developer runs on
+their own machine, and the whole detection engine.
+
+### Schema-Watch Cloud
+
+The hosted service and server-side components (`packages/server`) are licensed
+separately under the **Business Source License 1.1**. Commercial hosted use is
+subject to the applicable terms.
+
+In practice: you may use and self-host it freely, including in production. The
+single restriction is that you may not offer it to third parties as a
+competing hosted contract-monitoring service. It converts to Apache-2.0 on
+2030-08-13.
+
+Full texts: [LICENSE](./LICENSE) and [packages/server/LICENSE](./packages/server/LICENSE).
 
 ## Repo layout
 

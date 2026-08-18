@@ -83,32 +83,60 @@ export function BillingPage() {
         <div className="bank-transfer">
           <div className="bank-transfer__title">Pay by bank transfer</div>
           <p className="bank-transfer__intro">
-            Transfer the plan amount, then email proof and your team name. Your plan is activated by hand, usually
-            within a day.
+            Transfer the plan amount to whichever account matches your currency, then email proof and your team name.
+            Your plan is activated by hand, usually within a day.
           </p>
-          <dl className="bank-transfer__details">
-            <div>
-              <dt>Bank</dt>
-              <dd>{providers.bankTransfer.bankName}</dd>
+
+          {providers.bankTransfer.accounts.map((account) => (
+            <div className="bank-account" key={account.currency}>
+              <div className="bank-account__currency">Pay in {account.currency}</div>
+              <dl className="bank-transfer__details">
+                <div>
+                  <dt>Bank</dt>
+                  <dd>{account.bankName}</dd>
+                </div>
+                <div>
+                  <dt>Account number</dt>
+                  <dd className="mono">{account.accountNumber}</dd>
+                </div>
+                <div>
+                  <dt>Account name</dt>
+                  <dd>{account.accountName}</dd>
+                </div>
+                {account.accountType && (
+                  <div>
+                    <dt>Account type</dt>
+                    <dd>{account.accountType}</dd>
+                  </div>
+                )}
+                {account.wireRouting && (
+                  <div>
+                    <dt>Wire routing</dt>
+                    <dd className="mono">{account.wireRouting}</dd>
+                  </div>
+                )}
+                {account.achRouting && (
+                  <div>
+                    <dt>ACH routing</dt>
+                    <dd className="mono">{account.achRouting}</dd>
+                  </div>
+                )}
+                {account.bankAddress && (
+                  <div>
+                    <dt>Bank address</dt>
+                    <dd>{account.bankAddress}</dd>
+                  </div>
+                )}
+              </dl>
             </div>
-            <div>
-              <dt>Account number</dt>
-              <dd className="mono">{providers.bankTransfer.accountNumber}</dd>
-            </div>
-            <div>
-              <dt>Account name</dt>
-              <dd>{providers.bankTransfer.accountName}</dd>
-            </div>
-            {providers.bankTransfer.contactEmail && (
-              <div>
-                <dt>Send proof to</dt>
-                <dd>{providers.bankTransfer.contactEmail}</dd>
-              </div>
-            )}
-          </dl>
-          <p className="bank-transfer__note">
-            Include your team name <strong>{activeTeam.name}</strong> in the transfer narration so it can be matched.
-          </p>
+          ))}
+
+          {providers.bankTransfer.contactEmail && (
+            <p className="bank-transfer__note">
+              Send proof to <strong>{providers.bankTransfer.contactEmail}</strong>, and include your team name{" "}
+              <strong>{activeTeam.name}</strong> in the transfer narration so it can be matched.
+            </p>
+          )}
         </div>
       )}
 

@@ -110,12 +110,20 @@ export interface DeliveryRecord {
   createdAt: string;
 }
 
-export interface BankTransfer {
+export interface BankAccount {
+  currency: string;
+  bankName: string;
   accountName: string;
   accountNumber: string;
-  bankName: string;
+  wireRouting?: string;
+  achRouting?: string;
+  accountType?: string;
+  bankAddress?: string;
+}
+
+export interface BankTransfer {
+  accounts: BankAccount[];
   contactEmail: string;
-  currency: string;
 }
 
 export interface BillingProviders {

@@ -94,6 +94,40 @@ advertised.
 Never commit real account details. This repository is public, and anything
 committed to git is published permanently.
 
+## Bank transfer
+
+Shown on the billing page while a processor is being set up. Two accounts are
+supported so a customer pays in their own currency; each is configured
+entirely through environment variables and never committed, since the
+repository is public.
+
+```
+BANK_TRANSFER_ACCOUNT_NUMBER      local account
+BANK_TRANSFER_ACCOUNT_NAME
+BANK_TRANSFER_BANK_NAME
+BANK_TRANSFER_CURRENCY            defaults to NGN
+BANK_TRANSFER_CONTACT_EMAIL       where proof of payment is sent
+
+BANK_TRANSFER_USD_ACCOUNT_NUMBER  optional USD account
+BANK_TRANSFER_USD_ACCOUNT_NAME
+BANK_TRANSFER_USD_BANK_NAME
+BANK_TRANSFER_USD_WIRE_ROUTING
+BANK_TRANSFER_USD_ACH_ROUTING
+BANK_TRANSFER_USD_ACCOUNT_TYPE
+BANK_TRANSFER_USD_BANK_ADDRESS
+```
+
+The customer transfers and emails proof; the plan is then granted from the
+operator console at `/admin`, which records it as a `MANUAL` payment so it is
+never mistaken for a processor charge.
+
+**Publishing account details is a deliberate trade-off.** Anyone can see them,
+which is what makes payment possible. For US accounts specifically, a routing
+and account number together are what ACH debits use, so publishing them raises
+the risk of unauthorised debit attempts. Ask the bank about ACH debit blocks or
+Positive Pay if that matters to you, and prefer a business account over a
+personal one once volume justifies it.
+
 ## Environment variables
 
 ```
