@@ -5,6 +5,8 @@
 
 **Catch breaking API changes before your frontend breaks.**
 
+**[Try the hosted app](https://schema-watch-web.vercel.app)** · free tier, no card required.
+
 The backend changes `userId` from a string to a number. Nothing throws. You
 spend two hours in the debugger before realising the payload changed shape.
 Schema-Watch tells you the moment it happens, and names the files that will
