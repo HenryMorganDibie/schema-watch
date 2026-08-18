@@ -1,0 +1,27 @@
+{
+  "name": "@schema-watch/mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "schema-watch-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@schema-watch/agent": "*",
+    "@schema-watch/core": "*",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "typescript": "^5.6.3"
+  },
+  "license": "Apache-2.0"
+}

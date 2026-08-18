@@ -37,9 +37,18 @@ CREATE INDEX IF NOT EXISTS idx_changes_lookup ON changes(endpoint_id, created_at
 
 export type Db = DatabaseSync;
 
-export function openDatabase(dbPath: string): Db {
+/**
+ * `options.timeout` sets `PRAGMA busy_timeout` (ms), for a reader opening the
+ * same file from a second OS process (e.g. the MCP server) while the proxy
+ * may be mid-write. WAL already makes concurrent reads safe; this just makes
+ * a reader retry briefly on a transient lock instead of throwing. Implemented
+ * as a SQL pragma rather than `DatabaseSync`'s native `timeout` constructor
+ * option, which is gated to Node >=22.16.0.
+ */
+export function openDatabase(dbPath: string, options?: { timeout?: number }): Db {
   const db = new DatabaseSync(dbPath);
   db.exec("PRAGMA journal_mode = WAL;");
+  if (options?.timeout) db.exec(`PRAGMA busy_timeout = ${options.timeout};`);
   db.exec(SCHEMA);
   return db;
 }

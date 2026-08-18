@@ -12,6 +12,12 @@ import { findAffectedFiles } from "./proxy/affectedFiles.js";
 import { openDatabase } from "./storage/sqlite.js";
 import { startProxyServer } from "./proxy/server.js";
 import { startApiServer } from "./api/server.js";
+import { buildContextBrief } from "./context/brief.js";
+import { renderContextBriefMarkdown } from "./context/markdown.js";
+import { writeContextFile, upsertFencedBlock } from "./context/write.js";
+
+const CONTEXT_START_MARKER = "<!-- schema-watch-context:start -->";
+const CONTEXT_END_MARKER = "<!-- schema-watch-context:end -->";
 
 const [, , command, ...rest] = process.argv;
 
@@ -27,6 +33,9 @@ switch (command) {
     break;
   case "check":
     await runCheck(rest);
+    break;
+  case "context":
+    runContext(rest);
     break;
   default:
     printHelp();
@@ -46,6 +55,11 @@ Usage:
       --frontend-src <dir>            Scan this directory for files referencing changed endpoints
       --sarif <file>                  Also write SARIF 2.1.0 for GitHub code scanning
       --project <id> --api-key <key>  Use the cloud gate instead of --baseline
+  schema-watch context [options]      Write an AI context brief: captured endpoints, recent
+                                       breaking changes, and frontend cross-references.
+      --out <file>                    Where to write it (default: CONTEXT.md)
+      --claude-md                     Upsert into CLAUDE.md instead of --out
+      --limit <n>                     Max recent breaking changes to include (default: 20)
 
 Example:
   schema-watch init --target http://localhost:3001
@@ -132,6 +146,27 @@ function runExport(args: string[]): void {
 
   writeFileSync(outPath, JSON.stringify(entries, null, 2) + "\n");
   console.log(`Wrote ${entries.length} contract entries to ${outPath}`);
+}
+
+function runContext(args: string[]): void {
+  const config = loadConfig();
+  const db = openDatabase(config.dbPath);
+
+  const limitFlag = flagValue(args, "--limit");
+  const limit = limitFlag ? Number(limitFlag) : undefined;
+
+  const brief = buildContextBrief(db, config, { limit });
+  const markdown = renderContextBriefMarkdown(brief);
+
+  if (args.includes("--claude-md")) {
+    upsertFencedBlock("CLAUDE.md", CONTEXT_START_MARKER, CONTEXT_END_MARKER, markdown);
+    console.log("Updated the Schema-Watch section of CLAUDE.md");
+    return;
+  }
+
+  const outPath = flagValue(args, "--out") ?? "CONTEXT.md";
+  writeContextFile(outPath, markdown);
+  console.log(`Wrote ${brief.endpoints.length} endpoint(s) and ${brief.breakingChanges.length} recent breaking change(s) to ${outPath}`);
 }
 
 /**

@@ -71,6 +71,19 @@ backend and work normally. The dashboard is on `http://localhost:4561`.
 Set `frontendSrcDir` in the generated `schema-watch.config.json` to your app's
 `src/` folder to get the "which files reference this endpoint" list.
 
+## Give an AI chat the same context
+
+Instead of re-explaining your API surface to a new chat, hand it what
+Schema-Watch has already captured:
+
+```bash
+schema-watch context --claude-md   # upserts a section into CLAUDE.md
+schema-watch context --out CONTEXT.md
+```
+
+Or let an MCP-aware coding agent (Claude Code, Cursor) pull it live instead of
+reading a file: see [`packages/mcp`](./packages/mcp) for the local MCP server.
+
 ## Use it in CI
 
 No account required. Commit a baseline contract, then compare against it:

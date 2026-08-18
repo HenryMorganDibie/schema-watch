@@ -83,6 +83,9 @@ schema-watch/
       src/routes/{auth,teams,projects,snapshots,ci,billing,integrations}.ts
       src/lib/{prisma,jwt,password,diffProject}.ts
       src/plugins/authenticate.ts
+    mcp/                       local MCP server: same captured context as `schema-watch
+                               context`, served live over stdio to a coding agent
+      src/index.ts
   extension/
     README.md                  phase-2 scaffold notes (not built yet)
 ```
@@ -236,6 +239,13 @@ that signal quality and ship in this MVP:
   Every teammate who sees a red badge in a README is a cold lead who didn't come from
   an ad - this is the same PLG loop that made Codecov and Travis badges ubiquitous.
   See `packages/server/src/routes/badge.ts`.
+- **AI context brief.** The captured endpoints, recent breaking changes, and
+  affected-frontend-file data already power the dashboard and CI comments; the same
+  data is also exposed as `schema-watch context` (writes/upserts markdown into
+  `CONTEXT.md` or `CLAUDE.md`) and as a local MCP server (`packages/mcp`, additive -
+  same underlying data as the CLI, a different shell around it) so a coding agent can
+  pull current API state instead of a human re-explaining the codebase every session.
+  See `packages/agent/src/context/` and `packages/mcp/src/index.ts`.
 
 Roadmap items worth knowing about but *not* built in this pass (would meaningfully
 expand scope): an LLM-generated plain-English blast-radius explanation per breaking
@@ -256,3 +266,7 @@ without a redesign - `ContractChange.details` (JSONB) already has room for an
   on top of the same endpoint.
 - Extension is a documented stub (`extension/README.md`), not built, per the phased
   plan: prove the core loop locally first.
+- `packages/mcp` targets `@modelcontextprotocol/sdk` v1 (stdio transport) on purpose.
+  The SDK's `main` branch has already moved to an unreleased v2 split across
+  differently-named packages; not worth migrating to until the client ecosystem
+  (Claude Code, Cursor, etc.) actually supports it.

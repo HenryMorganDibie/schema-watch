@@ -5,6 +5,12 @@
   "bin": {
     "schema-watch": "./dist/cli.js"
   },
+  "exports": {
+    "./context": {
+      "types": "./dist/context/index.d.ts",
+      "default": "./dist/context/index.js"
+    }
+  },
   "files": [
     "dist",
     "dashboard-dist"
@@ -15,7 +21,7 @@
     "bundle": "node scripts/bundle-dashboard.mjs",
     "prepack": "npm run build && npm run bundle",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx --test src/ci/compare.test.ts"
+    "test": "tsx --test src/ci/compare.test.ts src/context/brief.test.ts"
   },
   "dependencies": {
     "@schema-watch/core": "*",
