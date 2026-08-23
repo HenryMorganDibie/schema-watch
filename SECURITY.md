@@ -79,6 +79,10 @@ Never trusted from their body alone.
 - **Stripe** is verified with `constructEvent` against the raw request bytes,
   which is why the JSON parser stashes `rawBody` rather than re-serialising.
 
+Security here is good enough to put the product in front of people; it is not
+finished. What remains, and what each item is blocked on, is tracked in
+[docs/SECURITY-ROADMAP.md](./docs/SECURITY-ROADMAP.md).
+
 ## Known gaps
 
 **A password reset does not end existing sessions.** JWTs are stateless and

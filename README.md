@@ -175,6 +175,7 @@ The local tool is free forever and needs no account.
 | [BILLING.md](./docs/BILLING.md) | plans, processors, how pricing is enforced |
 | [ROADMAP.md](./docs/ROADMAP.md) | what is next, and what is deliberately not built |
 | [PRIVACY.md](./docs/PRIVACY.md) | what telemetry is collected, and what never is |
+| [SECURITY-ROADMAP.md](./docs/SECURITY-ROADMAP.md) | what is still outstanding before serious public adoption |
 
 ## Licensing
 
