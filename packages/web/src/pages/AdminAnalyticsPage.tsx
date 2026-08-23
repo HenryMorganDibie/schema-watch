@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ActivityChart } from "../components/ActivityChart";
-import { api, type AnalyticsSummary, type GitHubTraffic } from "../lib/api";
+import { api, type AnalyticsSummary, type GitHubTraffic, type RetentionSummary } from "../lib/api";
 import { useAuth } from "../lib/auth";
 
 const RANGES = [7, 30, 90] as const;
@@ -109,6 +109,84 @@ function GitHubPanel() {
 }
 
 /**
+ * Signup cohorts by week, and whether they came back and used the product.
+ *
+ * The blank cells are the honest part. A cohort that signed up four days ago
+ * has no week-1 outcome yet, and printing 0% there would report a failure that
+ * has not happened. Those cells stay empty until the window actually closes.
+ *
+ * At this size the percentages are close to meaningless, so the raw counts
+ * lead and the sample is stated rather than dressed up.
+ */
+function RetentionPanel() {
+  const { data, isLoading, isError } = useQuery<RetentionSummary>({
+    queryKey: ["analytics", "retention"],
+    queryFn: () => api.retention(),
+  });
+
+  return (
+    <>
+      <div className="section-title">Retention by signup week</div>
+      <div className="card">
+        {isLoading && <div className="empty-note">Loading retention...</div>}
+        {isError && <div className="empty-note">Could not load retention.</div>}
+        {data && data.cohorts.length === 0 && (
+          <div className="empty-note">No signups yet in the last 12 weeks.</div>
+        )}
+        {data && data.cohorts.length > 0 && (
+          <>
+            <div className="cohort-table">
+              <div className="cohort-row cohort-row--head">
+                <span className="cohort-cell cohort-cell--label">Week of</span>
+                <span className="cohort-cell cohort-cell--label">Signups</span>
+                {data.weeks.map((w) => (
+                  <span className="cohort-cell" key={w}>
+                    W{w}
+                  </span>
+                ))}
+              </div>
+              {data.cohorts.map((c) => (
+                <div className="cohort-row" key={c.cohortWeek}>
+                  <span className="cohort-cell cohort-cell--label">{c.cohortWeek}</span>
+                  <span className="cohort-cell cohort-cell--label">{c.size}</span>
+                  {c.cells.map((cell) => (
+                    <span
+                      className={`cohort-cell ${cell.rate === null ? "cohort-cell--pending" : ""}`}
+                      key={cell.week}
+                      title={
+                        cell.rate === null
+                          ? "This week has not finished for anyone in this cohort yet"
+                          : `${cell.active} of ${cell.eligible} came back`
+                      }
+                    >
+                      {cell.rate === null ? "-" : `${cell.active}/${cell.eligible}`}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <div className="funnel-note">
+              Coming back means using the product, not signing in: the agent connected, a CI check
+              ran, or a schema was captured. A dash means that week has not finished yet for anyone
+              in the cohort, so there is nothing to measure, which is not the same as nobody
+              returning. Each cell counts only the users whose week has fully elapsed.
+              {data.totalUsers < 20 && (
+                <>
+                  {" "}
+                  With {data.totalUsers} {data.totalUsers === 1 ? "signup" : "signups"} in total,
+                  treat these as individual stories rather than rates.
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+/**
  * Private operator analytics: did anyone show up after a public post, and
  * where did they stop. The API returns 404 to non-admins, so this page simply
  * never loads for anyone else.
@@ -204,6 +282,8 @@ export function AdminAnalyticsPage() {
           </div>
         ))}
       </div>
+
+      <RetentionPanel />
 
       <GitHubPanel />
     </div>

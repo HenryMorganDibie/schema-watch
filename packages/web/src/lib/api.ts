@@ -245,6 +245,25 @@ export interface GitHubTraffic {
   fetchedAt: string;
 }
 
+export interface RetentionCell {
+  week: number;
+  eligible: number;
+  active: number | null;
+  rate: number | null;
+}
+
+export interface RetentionCohort {
+  cohortWeek: string;
+  size: number;
+  cells: RetentionCell[];
+}
+
+export interface RetentionSummary {
+  cohorts: RetentionCohort[];
+  weeks: number[];
+  totalUsers: number;
+}
+
 export interface AnalyticsSummary {
   range: number;
   metrics: AnalyticsMetrics;
@@ -257,6 +276,8 @@ export const api = {
   analyticsSummary: (range: number) => request<AnalyticsSummary>(`/api/admin/analytics/summary?range=${range}`),
 
   githubTraffic: () => request<GitHubTraffic>("/api/admin/analytics/github"),
+
+  retention: () => request<RetentionSummary>("/api/admin/analytics/retention"),
 
   adminListTeams: () => request<AdminTeam[]>("/api/admin/teams"),
 

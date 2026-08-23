@@ -1638,3 +1638,48 @@ a:hover {
   border-top: 1px solid var(--border);
   padding-top: 6px;
 }
+
+/* Cohort grid. Fixed columns so the week headers line up with their cells
+   regardless of how many cohorts are present. */
+.cohort-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+.cohort-row {
+  display: grid;
+  grid-template-columns: 96px 72px repeat(5, minmax(52px, 1fr));
+  gap: 2px;
+  align-items: center;
+}
+
+.cohort-row--head .cohort-cell {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cohort-cell {
+  padding: 7px 8px;
+  font-size: 12.5px;
+  text-align: center;
+  border-radius: 4px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.06));
+}
+
+.cohort-cell--label {
+  text-align: left;
+  background: none;
+  color: var(--text-muted);
+}
+
+/* A window that has not closed yet. Visually recessed so it does not read as
+   a zero. */
+.cohort-cell--pending {
+  background: none;
+  color: var(--text-muted);
+  opacity: 0.5;
+}

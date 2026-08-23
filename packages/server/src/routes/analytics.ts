@@ -7,6 +7,7 @@ import {
 } from "../lib/analytics.js";
 import { analyticsSummary, type RangeDays } from "../lib/analyticsQueries.js";
 import { githubTraffic } from "../lib/githubTraffic.js";
+import { retentionCohorts } from "../lib/retention.js";
 import { RATE_LIMITS, clientIp, enforceRateLimit } from "../lib/rateLimit.js";
 import { verifyToken } from "../lib/jwt.js";
 import { prisma } from "../lib/prisma.js";
@@ -95,5 +96,13 @@ export async function analyticsAdminRoutes(app: FastifyInstance): Promise<void> 
    */
   app.get("/github", async (_req, reply) => {
     return reply.send(await githubTraffic());
+  });
+
+  /**
+   * Also its own request. Retention scans further back than the summary
+   * window does, so it has no business making the headline numbers wait.
+   */
+  app.get("/retention", async (_req, reply) => {
+    return reply.send(await retentionCohorts());
   });
 }
