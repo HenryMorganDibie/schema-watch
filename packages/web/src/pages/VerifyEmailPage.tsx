@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Logo } from "@schema-watch/ui";
+import { track } from "../lib/analytics";
 import { api, ApiError } from "../lib/api";
 
 type State = { status: "working" } | { status: "done" } | { status: "failed"; message: string };
@@ -23,6 +24,8 @@ export function VerifyEmailPage() {
       setState({ status: "failed", message: "This link is missing its token." });
       return;
     }
+
+    track("email_verification_started");
 
     api
       .verifyEmail(token)

@@ -144,7 +144,37 @@ export interface AdminTeam {
   members: { email: string; role: TeamRole; emailVerified: boolean }[];
 }
 
+export interface AnalyticsMetrics {
+  totalUsers: number;
+  activeUsers: number;
+  projects: number;
+  activeProjects: number;
+  schemasCaptured: number;
+  breakingChanges: number;
+  ciChecks: number;
+  mcpUsage: number | null;
+}
+
+export interface AnalyticsPoint {
+  date: string;
+  totalActivity: number;
+  newUsers: number;
+  newProjects: number;
+  schemasCaptured: number;
+  breakingChanges: number;
+}
+
+export interface AnalyticsSummary {
+  range: number;
+  metrics: AnalyticsMetrics;
+  series: AnalyticsPoint[];
+  funnel: { label: string; count: number }[];
+  recent: { id: string; occurredAt: string; eventName: string; actor: string; projectName: string | null }[];
+}
+
 export const api = {
+  analyticsSummary: (range: number) => request<AnalyticsSummary>(`/api/admin/analytics/summary?range=${range}`),
+
   adminListTeams: () => request<AdminTeam[]>("/api/admin/teams"),
 
   adminSetPlan: (teamId: string, plan: Plan) =>

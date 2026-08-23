@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { BodyTarget, SchemaNode } from "@schema-watch/core";
 import { ingestSnapshot } from "../lib/diffProject.js";
+import { recordEventAsync } from "../lib/analytics.js";
 import { prisma } from "../lib/prisma.js";
 import { requireApiKey } from "../plugins/authenticate.js";
 
@@ -56,6 +57,12 @@ export async function ciRoutes(app: FastifyInstance): Promise<void> {
     const breakingChanges = results
       .filter((r) => r.change?.severity === "BREAKING")
       .map((r) => ({ endpointId: r.endpointId, changes: r.change!.changes, affectedFiles: r.change!.affectedFiles }));
+
+    recordEventAsync({
+      eventName: "ci_check_run",
+      projectId: project.id,
+      metadata: { endpoints: entries.length, breaking: breakingChanges.length },
+    });
 
     return reply.send({ pass: breakingChanges.length === 0, breakingChanges });
   });

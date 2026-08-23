@@ -4,6 +4,7 @@ import { hashPassword, verifyPassword } from "../lib/password.js";
 import { checkPassword } from "../lib/passwordPolicy.js";
 import { signToken } from "../lib/jwt.js";
 import { isPlatformAdmin } from "../lib/platformAdmin.js";
+import { recordEventAsync } from "../lib/analytics.js";
 import { prisma } from "../lib/prisma.js";
 import { RATE_LIMITS, clientIp, enforceRateLimit } from "../lib/rateLimit.js";
 import { consumeToken, issueToken } from "../lib/tokens.js";
@@ -64,6 +65,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     if (!user || !(await verifyPassword(password ?? "", user.passwordHash))) {
       return reply.code(401).send({ error: "invalid email or password" });
     }
+    recordEventAsync({ eventName: "login", userId: user.id });
     return reply.send({
       token: signToken({ userId: user.id, tokenVersion: user.tokenVersion }),
       user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified },
@@ -101,6 +103,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     if (!consumed) return reply.code(400).send({ error: "this link is invalid or has expired" });
 
     await prisma.user.update({ where: { id: consumed.userId }, data: { emailVerified: true } });
+    recordEventAsync({ eventName: "email_verification_completed", userId: consumed.userId });
     return reply.send({ verified: true });
   });
 

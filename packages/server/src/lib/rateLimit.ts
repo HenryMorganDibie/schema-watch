@@ -113,4 +113,7 @@ export const RATE_LIMITS = {
   forgotByIp: { name: "forgot-ip", limit: 10, windowMs: HOUR },
   resetByIp: { name: "reset-ip", limit: 10, windowMs: HOUR },
   resendByUser: { name: "resend-user", limit: 3, windowMs: HOUR },
+  // Analytics is cheap to call and unauthenticated, so it needs a ceiling;
+  // generous enough that a real visitor browsing normally never hits it.
+  analyticsByIp: { name: "analytics-ip", limit: 300, windowMs: HOUR },
 } as const satisfies Record<string, RateLimitRule>;

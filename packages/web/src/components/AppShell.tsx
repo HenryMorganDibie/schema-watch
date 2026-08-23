@@ -27,8 +27,13 @@ export function AppShell() {
             Billing
           </NavLink>
           {user?.isPlatformAdmin && (
-            <NavLink to="/admin" className={({ isActive }) => `nav__link ${isActive ? "nav__link--active" : ""}`}>
+            <NavLink to="/admin" end className={({ isActive }) => `nav__link ${isActive ? "nav__link--active" : ""}`}>
               Admin
+            </NavLink>
+          )}
+          {user?.isPlatformAdmin && (
+            <NavLink to="/admin/analytics" className={({ isActive }) => `nav__link ${isActive ? "nav__link--active" : ""}`}>
+              Analytics
             </NavLink>
           )}
         </div>

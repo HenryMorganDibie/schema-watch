@@ -10,7 +10,11 @@
 
 **Catch breaking API changes before your frontend breaks.**
 
-**[Try the hosted app](https://schema-watch-web.vercel.app)** · free tier, no card required.
+**[Schema-Watch Cloud](https://schema-watch-web.vercel.app) · early access.** The hosted app is
+live, and public self-service signup is being finished: production email
+delivery is waiting on a custom domain, so verification mail does not yet
+reach every inbox. **[Run Schema-Watch locally today](#30-second-demo)** - no
+account, no email, no waiting.
 
 The backend changes `userId` from a string to a number. Nothing throws. You
 spend two hours in the debugger before realising the payload changed shape.
@@ -154,6 +158,8 @@ the exact changed line, and organization-wide policy enforcement.
 - ✅ CI contract checks
 - ✅ Accounts, email verification, password reset
 - ✅ Slack and Discord alerts with delivery tracking
+- ✅ Hosted Cloud app deployed and running
+- 🚧 Public Cloud signup, pending a custom domain for production email
 - 🚧 Team collaboration features in progress
 - 🚧 Production payment integrations in progress
 
@@ -168,6 +174,7 @@ The local tool is free forever and needs no account.
 | [SECURITY.md](./SECURITY.md) | auth, tokens, password policy, known gaps |
 | [BILLING.md](./docs/BILLING.md) | plans, processors, how pricing is enforced |
 | [ROADMAP.md](./docs/ROADMAP.md) | what is next, and what is deliberately not built |
+| [PRIVACY.md](./docs/PRIVACY.md) | what telemetry is collected, and what never is |
 
 ## Licensing
 

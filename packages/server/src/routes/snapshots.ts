@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { BodyTarget, SchemaNode } from "@schema-watch/core";
 import { ingestSnapshot } from "../lib/diffProject.js";
+import { recordEventAsync } from "../lib/analytics.js";
 import { prisma } from "../lib/prisma.js";
 import { requireApiKey } from "../plugins/authenticate.js";
 
@@ -27,6 +28,17 @@ export async function snapshotRoutes(app: FastifyInstance): Promise<void> {
     const { method, pathPattern, target, statusCode, schema, affectedFiles } = req.body ?? {};
     if (!method || !pathPattern || !target || !schema) {
       return reply.code(400).send({ error: "method, pathPattern, target, and schema are required" });
+    }
+
+    // First snapshot for a project means an agent reached the cloud for the
+    // first time. Recorded once rather than on every sync, so the count means
+    // "projects that got connected", not "snapshots received".
+    const alreadyConnected = await prisma.analyticsEvent.findFirst({
+      where: { eventName: "agent_connected", projectId: project.id },
+      select: { id: true },
+    });
+    if (!alreadyConnected) {
+      recordEventAsync({ eventName: "agent_connected", projectId: project.id });
     }
 
     const result = await ingestSnapshot({

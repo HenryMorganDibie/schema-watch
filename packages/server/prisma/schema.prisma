@@ -186,6 +186,34 @@ model ContractChange {
   @@index([endpointId, createdAt])
 }
 
+// Product telemetry for questions the other tables cannot answer: anonymous
+// website engagement, and server-side actions that leave no row of their own
+// (a login, a CI check). Anything already recorded - users, projects,
+// snapshots, contract changes - is counted from its own table rather than
+// duplicated here.
+//
+// Deliberately not stored: IP addresses, user agents, full referrer URLs
+// (only the host), request payloads, source code, or anything from a
+// customer's captured traffic.
+model AnalyticsEvent {
+  id                String   @id @default(cuid())
+  eventName         String
+  occurredAt        DateTime @default(now())
+  anonymousVisitorId String?
+  sessionId         String?
+  userId            String?
+  projectId         String?
+  route             String?
+  referrerHost      String?
+  metadata          Json?
+
+  @@index([eventName, occurredAt])
+  @@index([occurredAt])
+  @@index([userId])
+  @@index([projectId])
+  @@index([anonymousVisitorId])
+}
+
 // Fixed-window counters for rate limiting. Kept in Postgres rather than in
 // memory because the API runs as serverless functions: an in-process counter
 // would reset on every cold start and never be shared between instances,

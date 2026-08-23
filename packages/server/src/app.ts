@@ -1,6 +1,7 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { adminRoutes } from "./routes/admin.js";
+import { analyticsAdminRoutes, analyticsIngestRoutes } from "./routes/analytics.js";
 import { authRoutes } from "./routes/auth.js";
 import { badgeRoutes } from "./routes/badge.js";
 import { billingRoutes } from "./routes/billing.js";
@@ -36,6 +37,8 @@ export function buildApp() {
 
   app.register(authRoutes, { prefix: "/api/auth" });
   app.register(adminRoutes, { prefix: "/api/admin" });
+  app.register(analyticsAdminRoutes, { prefix: "/api/admin/analytics" });
+  app.register(analyticsIngestRoutes, { prefix: "/api/analytics" });
   app.register(teamRoutes, { prefix: "/api/teams" });
   app.register(projectRoutes, { prefix: "/api" });
   app.register(snapshotRoutes, { prefix: "/api" });

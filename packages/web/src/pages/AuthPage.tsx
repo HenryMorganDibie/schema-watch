@@ -1,6 +1,7 @@
 import { Logo } from "@schema-watch/ui";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { track } from "../lib/analytics";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { PasswordStrength, passwordMeetsPolicy } from "../components/PasswordStrength";
@@ -14,6 +15,11 @@ export function AuthPage({ mode }: { mode: "login" | "signup" }) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [confirm, setConfirm] = useState("");
+
+  // Opening the signup form is the intent-to-register step of the funnel.
+  useEffect(() => {
+    if (isSignup) track("signup_started");
+  }, [isSignup]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
