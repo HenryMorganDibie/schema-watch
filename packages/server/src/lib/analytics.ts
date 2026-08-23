@@ -20,6 +20,10 @@ export const ANALYTICS_EVENTS = [
   "login",
   "agent_connected",
   "ci_check_run",
+  // Security-relevant auth events. Recorded because they have no row of their
+  // own; they never carry passwords, tokens, codes or keys.
+  "password_reset_completed",
+  "session_revoked",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

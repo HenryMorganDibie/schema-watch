@@ -33,7 +33,25 @@ export function buildApp() {
     }
   });
 
-  app.register(cors, { origin: true });
+  // An allowlist rather than reflecting whatever Origin arrives. Harmless
+  // today because auth is a bearer token that no browser attaches
+  // automatically, but reflecting any origin is exactly what makes a later
+  // move to cookie sessions unsafe. APP_URL is the deployed app; localhost
+  // covers development. Requests with no Origin (curl, the agent, CI) are
+  // unaffected.
+  const allowedOrigins = [
+    process.env.APP_URL,
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5199",
+  ].filter((o): o is string => Boolean(o));
+
+  app.register(cors, {
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      callback(null, false);
+    },
+  });
 
   app.register(authRoutes, { prefix: "/api/auth" });
   app.register(adminRoutes, { prefix: "/api/admin" });

@@ -2,12 +2,21 @@ import type { FastifyInstance } from "fastify";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 import { checkPassword } from "../lib/passwordPolicy.js";
-import { signToken } from "../lib/jwt.js";
+import { signAccessToken } from "../lib/jwt.js";
 import { isPlatformAdmin } from "../lib/platformAdmin.js";
 import { recordEventAsync } from "../lib/analytics.js";
 import { prisma } from "../lib/prisma.js";
 import { RATE_LIMITS, clientIp, enforceRateLimit } from "../lib/rateLimit.js";
 import { consumeToken, issueToken } from "../lib/tokens.js";
+import {
+  createSession,
+  listSessions,
+  revokeAllSessions,
+  revokeByRefreshToken,
+  revokeSessionChain,
+  rotateSession,
+  userAgentLabel,
+} from "../lib/session.js";
 import { requireUser } from "../plugins/authenticate.js";
 
 interface AuthBody {
@@ -47,8 +56,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       req.log.error({ err }, "failed to send verification email");
     }
 
+    const session = await createSession(user.id, userAgentLabel(req));
     return reply.code(201).send({
-      token: signToken({ userId: user.id, tokenVersion: user.tokenVersion }),
+      token: signAccessToken({ userId: user.id, tokenVersion: user.tokenVersion, sessionId: session.sessionId }),
+      refreshToken: session.refreshToken,
       user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified },
     });
   });
@@ -66,8 +77,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(401).send({ error: "invalid email or password" });
     }
     recordEventAsync({ eventName: "login", userId: user.id });
+    const session = await createSession(user.id, userAgentLabel(req));
     return reply.send({
-      token: signToken({ userId: user.id, tokenVersion: user.tokenVersion }),
+      token: signAccessToken({ userId: user.id, tokenVersion: user.tokenVersion, sessionId: session.sessionId }),
+      refreshToken: session.refreshToken,
       user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified },
     });
   });
@@ -174,9 +187,94 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       },
     });
 
+    // tokenVersion alone invalidates issued access tokens; the session rows
+    // must go too, or a stolen refresh token could mint brand new ones.
+    await revokeAllSessions(user.id, "password reset");
+    recordEventAsync({ eventName: "password_reset_completed", userId: user.id });
+
+    const session = await createSession(user.id, userAgentLabel(req));
     return reply.send({
-      token: signToken({ userId: user.id, tokenVersion: user.tokenVersion }),
+      token: signAccessToken({ userId: user.id, tokenVersion: user.tokenVersion, sessionId: session.sessionId }),
+      refreshToken: session.refreshToken,
       user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified },
     });
+  });
+
+  /**
+   * Exchanges a refresh token for a new access token and a new refresh token.
+   * Rotation is unconditional: the presented token is always spent.
+   */
+  app.post<{ Body: { refreshToken: string } }>("/refresh", async (req, reply) => {
+    if (await enforceRateLimit(req, reply, RATE_LIMITS.refreshByIp, clientIp(req))) return;
+
+    const { refreshToken } = req.body ?? {};
+    if (!refreshToken) return reply.code(400).send({ error: "refreshToken is required" });
+
+    const result = await rotateSession(refreshToken, userAgentLabel(req));
+    if (!result.ok) {
+      // Reuse means the token leaked and the chain has just been revoked, so
+      // both the victim and the thief are signed out and must reauthenticate.
+      const code = result.reason === "reused" ? "REFRESH_TOKEN_REUSED" : "SESSION_REVOKED";
+      return reply.code(401).send({ error: "please sign in again", code });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: result.userId },
+      select: { id: true, email: true, name: true, emailVerified: true, tokenVersion: true },
+    });
+    if (!user) return reply.code(401).send({ error: "please sign in again", code: "SESSION_REVOKED" });
+
+    return reply.send({
+      token: signAccessToken({
+        userId: user.id,
+        tokenVersion: user.tokenVersion,
+        sessionId: result.session.sessionId,
+      }),
+      refreshToken: result.session.refreshToken,
+      user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified },
+    });
+  });
+
+  /**
+   * Ends the current session server-side. Accepts the refresh token so the
+   * whole chain dies; falls back to the access token's session when the
+   * client no longer holds one.
+   */
+  app.post<{ Body: { refreshToken?: string } }>("/logout", async (req, reply) => {
+    const { refreshToken } = req.body ?? {};
+
+    if (refreshToken) {
+      await revokeByRefreshToken(refreshToken, "logout");
+    } else {
+      // No refresh token: fall back to the session named by a valid access
+      // token, if one was sent.
+      const header = req.headers.authorization;
+      if (header?.startsWith("Bearer ")) {
+        try {
+          const { verifyToken } = await import("../lib/jwt.js");
+          const payload = verifyToken(header.slice("Bearer ".length));
+          if (payload.sessionId) await revokeSessionChain(payload.sessionId, "logout");
+        } catch {
+          // An unusable token means there is nothing to revoke.
+        }
+      }
+    }
+
+    // Always 204: telling a caller whether a token was real would leak.
+    return reply.code(204).send();
+  });
+
+  app.get("/sessions", { preHandler: requireUser }, async (req, reply) => {
+    const sessions = await listSessions(req.userId!);
+    return reply.send(
+      sessions.map((s) => ({ ...s, current: s.id === req.sessionId })),
+    );
+  });
+
+  /** Signs every device out, including this one. */
+  app.post("/sessions/revoke-all", { preHandler: requireUser }, async (req, reply) => {
+    const count = await revokeAllSessions(req.userId!, "signed out everywhere");
+    recordEventAsync({ eventName: "session_revoked", userId: req.userId! });
+    return reply.send({ revoked: count });
   });
 }

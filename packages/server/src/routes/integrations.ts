@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { ChangeSeverity } from "@prisma/client";
+import { checkLimit, limitError } from "../lib/limits.js";
 import { requireMembership } from "../lib/membership.js";
 import { deliverToIntegration, validateWebhookUrl } from "../lib/notify/index.js";
 import { prisma } from "../lib/prisma.js";
@@ -77,9 +78,8 @@ export async function integrationRoutes(app: FastifyInstance): Promise<void> {
     async (req, reply) => {
       const project = await projectForUser(req.userId!, req.params.projectId);
       if (!project) return reply.code(404).send({ error: "project not found" });
-      if (project.team.plan === "FREE") {
-        return reply.code(402).send({ error: "Slack and Discord alerts require a Pro or Team plan" });
-      }
+      const verdict = await checkLimit(project.teamId, "integrations");
+      if (!verdict.allowed) return reply.code(402).send(limitError("integrations", verdict));
 
       const { type, webhookUrl, minSeverity = "BREAKING" } = req.body ?? {};
 

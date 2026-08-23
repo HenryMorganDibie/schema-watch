@@ -8,6 +8,7 @@ declare module "fastify" {
   interface FastifyRequest {
     userId?: string;
     teamId?: string;
+    sessionId?: string;
   }
 }
 
@@ -43,7 +44,22 @@ export async function requireUser(req: FastifyRequest, reply: FastifyReply): Pro
     return reply.code(401).send({ error: "session ended, please sign in again", code: "SESSION_REVOKED" });
   }
 
+  // A token bound to a session dies with that session, which is what makes
+  // logout and "sign out everywhere" real rather than cosmetic. Tokens minted
+  // before sessions existed carry no sessionId and remain valid until they
+  // expire, so shipping this logs nobody out.
+  if (payload.sessionId) {
+    const session = await prisma.session.findUnique({
+      where: { id: payload.sessionId },
+      select: { revokedAt: true, expiresAt: true },
+    });
+    if (!session || session.revokedAt || session.expiresAt < new Date()) {
+      return reply.code(401).send({ error: "session ended, please sign in again", code: "SESSION_REVOKED" });
+    }
+  }
+
   req.userId = payload.userId;
+  req.sessionId = payload.sessionId;
 }
 
 /**

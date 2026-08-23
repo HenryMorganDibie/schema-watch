@@ -69,6 +69,37 @@ model User {
   updatedAt     DateTime            @updatedAt
   memberships   TeamMember[]
   tokens        VerificationToken[]
+  sessions      Session[]
+}
+
+// An interactive browser session, refreshable and revocable.
+//
+// Access tokens stay stateless and short-lived; this row is what makes
+// logout, "sign out everywhere", and reuse detection possible at all. Only
+// the SHA-256 hash of the refresh token is stored, so a leaked backup cannot
+// be replayed - the same reasoning as ApiKey and VerificationToken.
+//
+// Machine credentials (ApiKey) are deliberately NOT modelled here: a CI job
+// and a browser tab should never share a credential type.
+model Session {
+  id               String    @id @default(cuid())
+  refreshTokenHash String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+  // Rotation: each refresh mints a successor. Presenting an already-rotated
+  // token means it leaked, so the whole family is revoked.
+  rotatedToId      String?   @unique
+  revokedAt        DateTime?
+  // Why it ended, for the security event log and the sessions UI.
+  revokedReason    String?
+  expiresAt        DateTime
+  lastUsedAt       DateTime  @default(now())
+  // Coarse client hint for a "your sessions" list. Never an IP address.
+  userAgentLabel   String?
+  createdAt        DateTime  @default(now())
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
 }
 
 enum TokenPurpose {

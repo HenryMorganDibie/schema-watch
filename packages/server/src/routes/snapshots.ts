@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { BodyTarget, SchemaNode } from "@schema-watch/core";
 import { ingestSnapshot } from "../lib/diffProject.js";
 import { recordEventAsync } from "../lib/analytics.js";
+import { checkLimit, limitError } from "../lib/limits.js";
 import { prisma } from "../lib/prisma.js";
 import { requireApiKey } from "../plugins/authenticate.js";
 
@@ -29,6 +30,11 @@ export async function snapshotRoutes(app: FastifyInstance): Promise<void> {
     if (!method || !pathPattern || !target || !schema) {
       return reply.code(400).send({ error: "method, pathPattern, target, and schema are required" });
     }
+
+    // Metered against the owning team, never against anything the caller
+    // supplied. Local capture is unaffected: this only guards cloud sync.
+    const verdict = await checkLimit(project.teamId, "captures");
+    if (!verdict.allowed) return reply.code(402).send(limitError("captures", verdict));
 
     // First snapshot for a project means an agent reached the cloud for the
     // first time. Recorded once rather than on every sync, so the count means

@@ -37,7 +37,7 @@ export function AuthPage({ mode }: { mode: "login" | "signup" }) {
     setSubmitting(true);
     try {
       const result = isSignup ? await api.signup(email, password, name || undefined) : await api.login(email, password);
-      signIn(result.token);
+      signIn(result.token, result.refreshToken);
       navigate("/", { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Try again.");

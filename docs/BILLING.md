@@ -128,6 +128,41 @@ the risk of unauthorised debit attempts. Ask the bank about ACH debit blocks or
 Positive Pay if that matters to you, and prefer a business account over a
 personal one once volume justifies it.
 
+## Usage limits
+
+Enforced server-side, per team, at the point each resource is consumed.
+Defined in one place: `packages/server/src/lib/limits.ts`.
+
+| Resource | Free | Pro | Team |
+| --- | --- | --- | --- |
+| Cloud projects | 1 | 20 | unlimited |
+| Endpoints per project | 25 | 250 | unlimited |
+| Captures per month | 5,000 | 100,000 | unlimited |
+| CI checks per month | 100 | 2,000 | unlimited |
+| Team seats | 1 | 1 | unlimited |
+| Integrations | 0 | 10 | unlimited |
+| History retained | 7 days | 365 days | unlimited |
+
+A team sees its own usage at `GET /api/teams/:teamId/usage`, scoped to
+membership so one team can never read another's.
+
+Exceeding a limit returns **HTTP 402** with a machine-readable body:
+
+```json
+{
+  "error": "You have reached your projects limit on the FREE plan.",
+  "code": "USAGE_LIMIT_REACHED",
+  "limit": { "resource": "projects", "used": 1, "limit": 1,
+             "plan": "FREE", "resetsAt": "2026-09-01T00:00:00.000Z" }
+}
+```
+
+Monthly counters reset on the first of the month. A warning is surfaced at 80%
+so a limit is never a surprise.
+
+**Nothing local is metered.** The proxy, dashboard, CLI and MCP server make no
+network calls, so the open-source product is unaffected by any of this.
+
 ## Environment variables
 
 ```

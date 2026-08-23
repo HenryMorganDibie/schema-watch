@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { BodyTarget, SchemaNode } from "@schema-watch/core";
 import { ingestSnapshot } from "../lib/diffProject.js";
 import { recordEventAsync } from "../lib/analytics.js";
+import { checkLimit, limitError } from "../lib/limits.js";
 import { prisma } from "../lib/prisma.js";
 import { requireApiKey } from "../plugins/authenticate.js";
 
@@ -41,6 +42,9 @@ export async function ciRoutes(app: FastifyInstance): Promise<void> {
     if (!project || project.teamId !== req.teamId) {
       return reply.code(404).send({ error: "project not found" });
     }
+    const verdict = await checkLimit(project.teamId, "ciChecks");
+    if (!verdict.allowed) return reply.code(402).send(limitError("ciChecks", verdict));
+
     const results = await Promise.all(
       entries.map((entry) =>
         ingestSnapshot({

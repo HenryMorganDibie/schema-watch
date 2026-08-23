@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { checkLimit, limitError } from "../lib/limits.js";
 import { requireMembership } from "../lib/membership.js";
 import { prisma } from "../lib/prisma.js";
 import { requireUser } from "../plugins/authenticate.js";
@@ -26,6 +27,10 @@ export async function projectRoutes(app: FastifyInstance): Promise<void> {
 
     const { name } = req.body ?? {};
     if (!name?.trim()) return reply.code(400).send({ error: "project name is required" });
+
+    // Server-side, because a frontend check is a suggestion.
+    const verdict = await checkLimit(req.params.teamId, "projects");
+    if (!verdict.allowed) return reply.code(402).send(limitError("projects", verdict));
 
     const baseSlug = slugify(name) || "project";
     let slug = baseSlug;

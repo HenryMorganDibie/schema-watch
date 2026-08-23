@@ -31,8 +31,8 @@ export function ResetPasswordPage() {
     try {
       // A successful reset returns a fresh session, so the user lands straight
       // in the app rather than being asked to type the new password again.
-      const { token: sessionToken } = await api.resetPassword(token, password);
-      signIn(sessionToken);
+      const { token: sessionToken, refreshToken } = await api.resetPassword(token, password);
+      signIn(sessionToken, refreshToken);
       navigate("/", { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not reset the password.");

@@ -10,7 +10,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "vercel-build": "prisma generate && tsc -p tsconfig.json",
-    "test": "tsx --test src/lib/notify/notify.test.ts src/lib/analytics.test.ts"
+    "test": "tsx --test src/lib/notify/notify.test.ts src/lib/analytics.test.ts src/lib/limits.test.ts src/lib/session.test.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",

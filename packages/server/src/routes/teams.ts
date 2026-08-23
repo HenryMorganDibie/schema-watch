@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { generateApiKey } from "../lib/apiKey.js";
+import { PLAN_LIMITS, checkLimit, limitError, teamUsage } from "../lib/limits.js";
 import { requireMembership } from "../lib/membership.js";
 import { prisma } from "../lib/prisma.js";
 import { requireUser, requireVerifiedEmail } from "../plugins/authenticate.js";
@@ -39,6 +40,9 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
       const membership = await requireMembership(req.userId!, req.params.teamId, ["OWNER", "ADMIN"]);
       if (!membership) return reply.code(403).send({ error: "only team owners/admins can add members" });
 
+      const seats = await checkLimit(req.params.teamId, "teamMembers");
+      if (!seats.allowed) return reply.code(402).send(limitError("teamMembers", seats));
+
       const { email, role = "MEMBER" } = req.body ?? {};
       const user = await prisma.user.findUnique({ where: { email } });
       if (!user) return reply.code(404).send({ error: "no account with that email exists yet" });
@@ -67,6 +71,16 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(201).send({ id: created.id, label: created.label, key: plainText });
     },
   );
+
+  /** Current usage against plan limits. Scoped to a team the caller belongs
+   * to, so one team can never read another's. */
+  app.get<{ Params: { teamId: string } }>("/:teamId/usage", async (req, reply) => {
+    const membership = await requireMembership(req.userId!, req.params.teamId, ["OWNER", "ADMIN", "MEMBER"]);
+    if (!membership) return reply.code(404).send({ error: "team not found" });
+
+    const usage = await teamUsage(req.params.teamId);
+    return reply.send({ ...usage, historyDays: PLAN_LIMITS[usage.plan].historyDays });
+  });
 
   app.get<{ Params: { teamId: string } }>("/:teamId/api-keys", async (req, reply) => {
     const membership = await requireMembership(req.userId!, req.params.teamId, ["OWNER", "ADMIN", "MEMBER"]);

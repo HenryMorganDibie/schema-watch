@@ -17,17 +17,24 @@ declare global {
 const API_BASE = window.__SCHEMA_WATCH_API__ || import.meta.env.VITE_API_URL || "";
 
 const TOKEN_KEY = "schema-watch.token";
+const REFRESH_KEY = "schema-watch.refresh";
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-export function setToken(token: string): void {
+export function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_KEY);
+}
+
+export function setToken(token: string, refreshToken?: string): void {
   localStorage.setItem(TOKEN_KEY, token);
+  if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
 }
 
 export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
 }
 
 export class ApiError extends Error {
@@ -39,9 +46,8 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = getToken();
-  const res = await fetch(`${API_BASE}${path}`, {
+function send(path: string, init: RequestInit, token: string | null): Promise<Response> {
+  return fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       "content-type": "application/json",
@@ -49,6 +55,54 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...init.headers,
     },
   });
+}
+
+/**
+ * Access tokens now last fifteen minutes, so an open tab will routinely meet
+ * a 401. One refresh is attempted and the request replayed; a failed refresh
+ * means the session is genuinely gone, so the stored credentials are cleared
+ * rather than left to fail forever.
+ */
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function refreshSession(): Promise<boolean> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return false;
+
+  // Several requests can 401 at once; they must share one rotation, or the
+  // losers would present an already-rotated token and trip reuse detection.
+  refreshInFlight ??= (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!res.ok) {
+        clearToken();
+        return false;
+      }
+      const body = await res.json();
+      setToken(body.token, body.refreshToken);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  let res = await send(path, init, getToken());
+
+  if (res.status === 401 && !path.startsWith("/api/auth/refresh")) {
+    if (await refreshSession()) {
+      res = await send(path, init, getToken());
+    }
+  }
 
   if (res.status === 204) return undefined as T;
 
@@ -192,16 +246,29 @@ export const api = {
     request<{ sent: true }>("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
 
   resetPassword: (token: string, password: string) =>
-    request<{ token: string }>("/api/auth/reset-password", { method: "POST", body: JSON.stringify({ token, password }) }),
+    request<{ token: string; refreshToken: string }>("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password }),
+    }),
+
+  logout: (refreshToken: string | null) =>
+    request<void>("/api/auth/logout", { method: "POST", body: JSON.stringify({ refreshToken }) }),
+
+  listSessions: () =>
+    request<{ id: string; userAgentLabel: string | null; lastUsedAt: string; createdAt: string; current: boolean }[]>(
+      "/api/auth/sessions",
+    ),
+
+  revokeAllSessions: () => request<{ revoked: number }>("/api/auth/sessions/revoke-all", { method: "POST" }),
 
   signup: (email: string, password: string, name?: string) =>
-    request<{ token: string; user: { id: string; email: string } }>("/api/auth/signup", {
+    request<{ token: string; refreshToken: string; user: { id: string; email: string } }>("/api/auth/signup", {
       method: "POST",
       body: JSON.stringify({ email, password, name }),
     }),
 
   login: (email: string, password: string) =>
-    request<{ token: string; user: { id: string; email: string } }>("/api/auth/login", {
+    request<{ token: string; refreshToken: string; user: { id: string; email: string } }>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),

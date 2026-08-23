@@ -116,4 +116,7 @@ export const RATE_LIMITS = {
   // Analytics is cheap to call and unauthenticated, so it needs a ceiling;
   // generous enough that a real visitor browsing normally never hits it.
   analyticsByIp: { name: "analytics-ip", limit: 300, windowMs: HOUR },
+  // Refresh is unauthenticated by design, so it needs a ceiling of its own.
+  // Generous: a busy tab refreshes every 15 minutes.
+  refreshByIp: { name: "refresh-ip", limit: 120, windowMs: HOUR },
 } as const satisfies Record<string, RateLimitRule>;

@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { api, clearToken, getToken, setToken, type Me } from "./api";
+import { api, clearToken, getRefreshToken, getToken, setToken, type Me } from "./api";
 
 interface AuthValue {
   user: Me | null;
   loading: boolean;
-  signIn: (token: string) => void;
+  signIn: (token: string, refreshToken?: string) => void;
   signOut: () => void;
 }
 
@@ -27,12 +27,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
 
-  const signIn = useCallback((newToken: string) => {
-    setToken(newToken);
+  const signIn = useCallback((newToken: string, refreshToken?: string) => {
+    setToken(newToken, refreshToken);
     setTokenState(newToken);
   }, []);
 
   const signOut = useCallback(() => {
+    // Tell the server first so the session is actually revoked. Local state is
+    // cleared regardless: a failed call must never leave someone stuck signed
+    // in, and the access token expires in fifteen minutes anyway.
+    void api.logout(getRefreshToken()).catch(() => {});
     clearToken();
     setTokenState(null);
     queryClient.clear();
