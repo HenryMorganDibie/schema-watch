@@ -8,7 +8,7 @@ import {
   buildContextBrief,
   renderContextBriefMarkdown,
   findAffectedFiles,
-} from "@schema-watch/agent/context";
+} from "schema-watch/context";
 
 // StdioServerTransport owns stdin/stdout for JSON-RPC framing - never
 // console.log here or anywhere in the imported context module, it would

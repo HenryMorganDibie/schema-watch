@@ -22,5 +22,31 @@
   "devDependencies": {
     "typescript": "^5.6.3"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "description": "Schema inference and shape-diffing engine for API contract monitoring.",
+  "keywords": [
+    "api",
+    "contract",
+    "schema",
+    "diff",
+    "breaking-change"
+  ],
+  "homepage": "https://github.com/HenryMorganDibie/schema-watch",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HenryMorganDibie/schema-watch.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/HenryMorganDibie/schema-watch/issues"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

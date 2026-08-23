@@ -64,9 +64,11 @@ timestamp is worse than no tool.
 
 ## Use it locally
 
+Needs Node 22.5 or newer.
+
 ```bash
-schema-watch init --target http://localhost:3001
-schema-watch start
+npx schema-watch init --target http://localhost:3001
+npx schema-watch start
 ```
 
 Point your frontend's API base URL at `http://localhost:4560` instead of your
@@ -81,8 +83,8 @@ Instead of re-explaining your API surface to a new chat, hand it what
 Schema-Watch has already captured:
 
 ```bash
-schema-watch context --claude-md   # upserts a section into CLAUDE.md
-schema-watch context --out CONTEXT.md
+npx schema-watch context --claude-md   # upserts a section into CLAUDE.md
+npx schema-watch context --out CONTEXT.md
 ```
 
 Or let an MCP-aware coding agent (Claude Code, Cursor) pull it live instead of
@@ -93,8 +95,8 @@ reading a file: see [`packages/mcp`](./packages/mcp) for the local MCP server.
 No account required. Commit a baseline contract, then compare against it:
 
 ```bash
-schema-watch export --out contract.json
-schema-watch check   --contract contract.json   --baseline .schema-watch/baseline.json   --frontend-src src   --sarif schema-watch.sarif     # exits 1 on a breaking change
+npx schema-watch export --out contract.json
+npx schema-watch check   --contract contract.json   --baseline .schema-watch/baseline.json   --frontend-src src   --sarif schema-watch.sarif     # exits 1 on a breaking change
 ```
 
 Copy [`examples/github-action/schema-watch.yml`](./examples/github-action/schema-watch.yml)

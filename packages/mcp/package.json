@@ -15,13 +15,16 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@schema-watch/agent": "*",
     "@schema-watch/core": "*",
+    "schema-watch": "^0.1.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",
     "typescript": "^5.6.3"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.5.0"
+  }
 }
