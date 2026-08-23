@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ActivityChart } from "../components/ActivityChart";
-import { api, type AnalyticsSummary } from "../lib/api";
+import { api, type AnalyticsSummary, type GitHubTraffic } from "../lib/api";
 import { useAuth } from "../lib/auth";
 
 const RANGES = [7, 30, 90] as const;
@@ -37,6 +37,74 @@ function Stat({ label, value, note }: { label: string; value: number | null; not
       </div>
       {note && <div className="stat__note">{note}</div>}
     </div>
+  );
+}
+
+/**
+ * Reach, as GitHub measures it.
+ *
+ * Deliberately fenced off from the numbers above. GitHub counts a clone from
+ * every machine that clones: CI runners, mirrors, package caches and crawlers
+ * included. "Unique cloners" is a count of distinct sources, not of people,
+ * and reading it as an audience is the specific mistake this panel is laid out
+ * to prevent.
+ */
+function GitHubPanel() {
+  const { data, isLoading, isError } = useQuery<GitHubTraffic>({
+    queryKey: ["analytics", "github"],
+    queryFn: () => api.githubTraffic(),
+    staleTime: 15 * 60 * 1000,
+  });
+
+  return (
+    <>
+      <div className="section-title">
+        Repository reach <span className="section-title__tag">reported by GitHub</span>
+      </div>
+      <div className="card">
+        {isLoading && <div className="empty-note">Loading GitHub traffic...</div>}
+        {(isError || (data && !data.available)) && (
+          <div className="empty-note">
+            Unavailable. {data?.reason ?? "GitHub could not be reached."}
+          </div>
+        )}
+        {data?.available && (
+          <>
+            <div className="stat-grid">
+              <Stat label="Repo views" value={data.views?.total ?? null} note="includes bots" />
+              <Stat label="Unique visitors" value={data.views?.uniques ?? null} note="GitHub's count" />
+              <Stat label="Clones" value={data.clones?.total ?? null} note="includes CI and mirrors" />
+              <Stat
+                label="Unique cloners"
+                value={data.clones?.uniques ?? null}
+                note="distinct sources, not people"
+              />
+            </div>
+
+            {data.referrers && data.referrers.length > 0 && (
+              <div className="referrer-list">
+                {data.referrers.map((r) => (
+                  <div className="activity-row" key={r.referrer}>
+                    <span className="activity-row__event">{r.referrer}</span>
+                    <span className="activity-row__time">
+                      {r.count} views · {r.uniques} unique
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="funnel-note">
+              These are GitHub's own repository metrics for <code>{data.repo}</code>, not first-party
+              analytics, and they do not connect to the funnel above: nothing here can be tied to a
+              visitor, a signup or a session. A clone is a machine, not a reader. GitHub keeps only{" "}
+              {data.retentionDays} days of traffic, so this window does not follow the range selected
+              above. Last read {timeAgo(data.fetchedAt)}.
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -136,6 +204,8 @@ export function AdminAnalyticsPage() {
           </div>
         ))}
       </div>
+
+      <GitHubPanel />
     </div>
   );
 }

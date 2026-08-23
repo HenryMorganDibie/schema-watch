@@ -6,6 +6,7 @@ import {
   type AnalyticsEventName,
 } from "../lib/analytics.js";
 import { analyticsSummary, type RangeDays } from "../lib/analyticsQueries.js";
+import { githubTraffic } from "../lib/githubTraffic.js";
 import { RATE_LIMITS, clientIp, enforceRateLimit } from "../lib/rateLimit.js";
 import { verifyToken } from "../lib/jwt.js";
 import { prisma } from "../lib/prisma.js";
@@ -85,5 +86,14 @@ export async function analyticsAdminRoutes(app: FastifyInstance): Promise<void> 
     const range = parseRange(req.query.range);
     const summary = await analyticsSummary(range);
     return reply.send({ range, ...summary });
+  });
+
+  /**
+   * Separate from /summary on purpose. This one depends on a third party, so
+   * it gets its own request: GitHub being slow or down degrades this panel
+   * alone instead of taking the first-party dashboard with it.
+   */
+  app.get("/github", async (_req, reply) => {
+    return reply.send(await githubTraffic());
   });
 }

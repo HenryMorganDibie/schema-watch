@@ -218,6 +218,33 @@ export interface AnalyticsPoint {
   breakingChanges: number;
 }
 
+export interface TrafficPoint {
+  date: string;
+  count: number;
+  uniques: number;
+}
+
+export interface ReferrerRow {
+  referrer: string;
+  count: number;
+  uniques: number;
+}
+
+/**
+ * Reported by GitHub, not measured by us. Kept as its own type so it is never
+ * accidentally folded into the first-party numbers.
+ */
+export interface GitHubTraffic {
+  available: boolean;
+  reason: string | null;
+  repo: string;
+  retentionDays: number;
+  views: { total: number; uniques: number; series: TrafficPoint[] } | null;
+  clones: { total: number; uniques: number; series: TrafficPoint[] } | null;
+  referrers: ReferrerRow[] | null;
+  fetchedAt: string;
+}
+
 export interface AnalyticsSummary {
   range: number;
   metrics: AnalyticsMetrics;
@@ -228,6 +255,8 @@ export interface AnalyticsSummary {
 
 export const api = {
   analyticsSummary: (range: number) => request<AnalyticsSummary>(`/api/admin/analytics/summary?range=${range}`),
+
+  githubTraffic: () => request<GitHubTraffic>("/api/admin/analytics/github"),
 
   adminListTeams: () => request<AdminTeam[]>("/api/admin/teams"),
 

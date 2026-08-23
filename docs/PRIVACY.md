@@ -68,6 +68,20 @@ authenticated platform administrator and return 404 to everyone else, enforced
 on the server rather than by hiding the page. Nothing is exposed through the
 public API.
 
+## GitHub repository traffic
+
+The operator dashboard can also show GitHub's own traffic numbers for the
+public repository: views, clones and referring sites. That data is produced by
+GitHub, about the repository, and it is read with a `GITHUB_TRAFFIC_TOKEN`.
+
+It says nothing about any user of this service. It cannot be joined to a
+visitor, an account or a session, and it is not merged into the first-party
+metrics. It is shown in its own panel, labelled as GitHub's, for that reason.
+Clone counts in particular are counts of machines, not of people: CI runners,
+mirrors and crawlers all clone.
+
+Without `GITHUB_TRAFFIC_TOKEN`, the panel reports itself unavailable.
+
 ## Self-hosting
 
 If you self-host, the analytics tables are yours and nothing is reported to

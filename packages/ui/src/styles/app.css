@@ -1618,3 +1618,23 @@ a:hover {
   color: var(--text-muted);
   line-height: 1.5;
 }
+
+/* Marks a block whose numbers come from somewhere other than our own
+   instrumentation, so the distinction survives a glance at the page. */
+.section-title__tag {
+  margin-left: 8px;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--text-muted);
+}
+
+.referrer-list {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
