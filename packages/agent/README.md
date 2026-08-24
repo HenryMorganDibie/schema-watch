@@ -15,8 +15,9 @@ npx schema-watch start
 Point your frontend at the proxy, use your app, and open the dashboard. Every
 endpoint you touch is now under contract.
 
-Requires **Node 22.5 or newer** (it stores captures with the built-in
-`node:sqlite`).
+**No account, no signup, no network.** The proxy, the database and the
+dashboard all run on your machine. Requires **Node 22.5 or newer** (it stores
+captures with the built-in `node:sqlite`).
 
 ## The CI gate
 
