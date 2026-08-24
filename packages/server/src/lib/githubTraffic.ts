@@ -91,12 +91,14 @@ const CACHE_MS = 15 * 60 * 1000;
 export async function githubTraffic(): Promise<GitHubTraffic> {
   if (cache && Date.now() - cache.at < CACHE_MS) return cache.value;
 
-  const token = process.env.GITHUB_TRAFFIC_TOKEN;
+  // GITHUB_TRAFFIC_TOKEN is the canonical name; TRAFFIC_TOKEN is accepted
+  // because that is what the deployment already sets.
+  const token = process.env.GITHUB_TRAFFIC_TOKEN ?? process.env.TRAFFIC_TOKEN;
   if (!token) {
     // Not an error. The dashboard shows this as unavailable rather than
     // guessing, because a guessed number here would be indistinguishable
     // from a measured one.
-    return unavailable("GITHUB_TRAFFIC_TOKEN is not configured");
+    return unavailable("GITHUB_TRAFFIC_TOKEN (or TRAFFIC_TOKEN) is not configured");
   }
 
   const base = `/repos/${OWNER}/${REPO}/traffic`;
