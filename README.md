@@ -1,38 +1,56 @@
 # Schema-Watch
 
+[![npm](https://img.shields.io/npm/v/schema-watch)](https://www.npmjs.com/package/schema-watch)
 [![schema-watch](https://github.com/HenryMorganDibie/schema-watch/actions/workflows/schema-watch.yml/badge.svg)](https://github.com/HenryMorganDibie/schema-watch/actions/workflows/schema-watch.yml)
-[![core license](https://img.shields.io/badge/core-Apache--2.0-blue)](./LICENSE)
-[![server license](https://img.shields.io/badge/server-BUSL--1.1-orange)](./packages/server/LICENSE)
+[![core license](https://img.shields.io/badge/core-Apache--2.0-blue)](#licensing)
 
-> **⚠️ Licensing:** the open-source packages (`core`, `agent`, `ui`, `dashboard`, `web`) are **Apache-2.0**.
-> The hosted Cloud backend (`packages/server`) is licensed separately under **BUSL-1.1**.
-> GitHub's repository label shows only the root license. See [Licensing](#licensing).
+**Catch breaking API changes before they reach your users.**
 
-**Catch breaking API changes before your frontend breaks.**
+Your API changed. Schema-Watch tells you exactly what broke.
 
-**[Schema-Watch Cloud](https://schema-watch-web.vercel.app) · early access.** The hosted app is
-live, and public self-service signup is being finished: production email
-delivery is waiting on a custom domain, so verification mail does not yet
-reach every inbox. **[Run Schema-Watch locally today](#30-second-demo)** - no
-account, no email, no waiting.
+```console
+$ npx schema-watch check --baseline .schema-watch/baseline.json
+
+BREAKING  GET /api/users/:id (response)
+    id: number → string
+    email was removed (was string)
+
+Breaking API contract changes detected.
+```
+
+Exit code `1`, so your build fails instead of your frontend.
+
+## Try it in 30 seconds
+
+Needs Node 22.5 or newer. No account, no signup, nothing to configure.
+
+```bash
+npx schema-watch init --target http://localhost:3001   # your backend
+npx schema-watch start
+```
+
+Point your frontend at `http://localhost:4560` and use your app normally. The
+dashboard is on `http://localhost:4561`, and every endpoint you touch is now
+under contract.
+
+Set `frontendSrcDir` in the generated `schema-watch.config.json` to your app's
+`src/` folder, and each breaking change also lists the files that reference the
+endpoint.
 
 The backend changes `userId` from a string to a number. Nothing throws. You
 spend two hours in the debugger before realising the payload changed shape.
-Schema-Watch tells you the moment it happens, and names the files that will
-break.
+Schema-Watch tells you the moment it happens, and names the frontend files that
+will break.
 
-## 30-second demo
+## See it break, without wiring up your own app
 
 ```bash
-npm install
-npm run build
-npm run demo
+git clone https://github.com/HenryMorganDibie/schema-watch && cd schema-watch
+npm install && npm run build && npm run demo
 ```
 
-Open **<http://localhost:4561>**.
-
-A mock backend serves a stable contract, then "ships a breaking change" ten
-seconds in. Four alerts land live while you watch:
+Open **<http://localhost:4561>**. A mock backend serves a stable contract, then
+ships a breaking change ten seconds in. Four alerts land live while you watch:
 
 | Endpoint | Change | Verdict |
 | --- | --- | --- |
@@ -61,21 +79,6 @@ counts produce no noise at all, so an alert always means something real.
 That last row in the table above is the point: values jitter on every request
 in the demo and nothing fires. A tool that cries wolf on every changed
 timestamp is worse than no tool.
-
-## Use it locally
-
-Needs Node 22.5 or newer.
-
-```bash
-npx schema-watch init --target http://localhost:3001
-npx schema-watch start
-```
-
-Point your frontend's API base URL at `http://localhost:4560` instead of your
-backend and work normally. The dashboard is on `http://localhost:4561`.
-
-Set `frontendSrcDir` in the generated `schema-watch.config.json` to your app's
-`src/` folder to get the "which files reference this endpoint" list.
 
 ## Give an AI chat the same context
 
@@ -135,17 +138,31 @@ detection engine, and it stays free.
 
 ### Schema-Watch Cloud
 
+Live today:
+
+- Hosted history and a schema timeline: *when* did `userId` become a number
+- A shared CI baseline across branches, so a check does not depend on a
+  committed file being up to date
+- Slack and Discord alerts, with delivery tracking and automatic disabling of
+  dead webhooks
+- Teams, roles and a public status badge
+
+Planned, and not built yet:
+
 - **Cross-repository impact analysis** - one backend change, every consuming
   repo listed with the exact files
 - GitHub App with branded PR reviews and inline comments on the changed line
 - Organization-wide policies and managed required checks
-- Hosted history and a schema timeline: *when* did `userId` become a number
-- Slack and Discord alerts
-- Team dashboards, roles and audit logs
+- Audit logs
 
-These need centralised data across repositories, hosted integrations and
-background sync. They are the parts that are genuinely painful to run
-yourself, not artificial limits on the parts that are not.
+The planned items need centralised data across repositories, hosted
+integrations and background sync. They are the parts that are genuinely
+painful to run yourself, not artificial limits on the parts that are not.
+
+Cloud signup is **early access**: the app is deployed and running, but public
+self-service signup is still being finished, because production email delivery
+is waiting on a custom domain. The local tool needs none of that and is free
+forever.
 
 ## Coming soon
 
@@ -180,6 +197,13 @@ The local tool is free forever and needs no account.
 | [SECURITY-ROADMAP.md](./docs/SECURITY-ROADMAP.md) | what is still outstanding before serious public adoption |
 
 ## Licensing
+
+### GitHub's repository label
+
+GitHub shows only the root license for a repository. This one is dual-licensed:
+the open-source packages (`core`, `agent`, `ui`, `dashboard`, `web`) are
+**Apache-2.0**, and the hosted Cloud backend (`packages/server`) is licensed
+separately under **BUSL-1.1**.
 
 ### Open Source
 

@@ -1,7 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ActivityChart } from "../components/ActivityChart";
-import { api, type AnalyticsSummary, type GitHubTraffic, type RetentionSummary } from "../lib/api";
+import {
+  api,
+  type AnalyticsSummary,
+  type GitHubTraffic,
+  type NpmDownloads,
+  type RetentionSummary,
+} from "../lib/api";
 import { useAuth } from "../lib/auth";
 
 const RANGES = [7, 30, 90] as const;
@@ -187,6 +193,59 @@ function RetentionPanel() {
 }
 
 /**
+ * Installs of the published CLI.
+ *
+ * The one part of the funnel that is otherwise invisible. The local tool makes
+ * no network calls on purpose, so a developer can get the entire product from
+ * npx and never appear in anything above. Downloads are the only evidence that
+ * step is happening at all.
+ *
+ * Like the GitHub panel, this counts machines. CI, mirrors and caches install
+ * too. npm also lags a new package by a day or so, which is reported as
+ * unavailable rather than as zero, because those are different facts.
+ */
+function NpmPanel() {
+  const { data, isLoading, isError } = useQuery<NpmDownloads>({
+    queryKey: ["analytics", "npm"],
+    queryFn: () => api.npmDownloads(),
+    staleTime: 30 * 60 * 1000,
+  });
+
+  return (
+    <>
+      <div className="section-title">
+        Package installs <span className="section-title__tag">reported by npm</span>
+      </div>
+      <div className="card">
+        {isLoading && <div className="empty-note">Loading npm downloads...</div>}
+        {(isError || (data && !data.available)) && (
+          <div className="empty-note">
+            Not counted yet. {data?.reason ?? "npm could not be reached."} npm takes about a day to
+            begin reporting a newly published package, which is not the same as zero installs.
+          </div>
+        )}
+        {data?.available && (
+          <>
+            <div className="stat-grid">
+              <Stat label="Last 24 hours" value={data.lastDay} note="installs, not people" />
+              <Stat label="Last 7 days" value={data.lastWeek} note="includes CI and mirrors" />
+              <Stat label="Last 30 days" value={data.lastMonth} note="npm's count" />
+            </div>
+            <div className="funnel-note">
+              npm's own download counts for <code>{data.package}</code>. An install is a machine:
+              every CI run, container build and registry mirror is counted here, so this is a
+              direction rather than an audience. It is also the only visibility into people using
+              the local tool, which by design never reports anything back. Last read{" "}
+              {timeAgo(data.fetchedAt)}.
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+/**
  * Private operator analytics: did anyone show up after a public post, and
  * where did they stop. The API returns 404 to non-admins, so this page simply
  * never loads for anyone else.
@@ -286,6 +345,8 @@ export function AdminAnalyticsPage() {
       <RetentionPanel />
 
       <GitHubPanel />
+
+      <NpmPanel />
     </div>
   );
 }

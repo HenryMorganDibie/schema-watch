@@ -264,6 +264,16 @@ export interface RetentionSummary {
   totalUsers: number;
 }
 
+export interface NpmDownloads {
+  available: boolean;
+  reason: string | null;
+  package: string;
+  lastDay: number | null;
+  lastWeek: number | null;
+  lastMonth: number | null;
+  fetchedAt: string;
+}
+
 export interface AnalyticsSummary {
   range: number;
   metrics: AnalyticsMetrics;
@@ -276,6 +286,8 @@ export const api = {
   analyticsSummary: (range: number) => request<AnalyticsSummary>(`/api/admin/analytics/summary?range=${range}`),
 
   githubTraffic: () => request<GitHubTraffic>("/api/admin/analytics/github"),
+
+  npmDownloads: () => request<NpmDownloads>("/api/admin/analytics/npm"),
 
   retention: () => request<RetentionSummary>("/api/admin/analytics/retention"),
 
