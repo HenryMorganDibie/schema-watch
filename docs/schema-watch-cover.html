@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1600px; height: 900px; overflow: hidden; }
+  body {
+    background: #0A0C10;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    color: #E6EDF3;
+    position: relative;
+  }
+  /* soft blue glow, keeps the flat dark from looking like a dead slide */
+  .glow {
+    position: absolute; top: -340px; left: 50%; transform: translateX(-50%);
+    width: 1500px; height: 800px; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(56,120,220,0.20), rgba(56,120,220,0));
+  }
+  .grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.020) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.020) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(closest-side at 50% 40%, #000 40%, transparent 100%);
+  }
+  .wrap {
+    position: relative; height: 100%;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 0 90px;
+  }
+  .eyebrow {
+    font-size: 21px; letter-spacing: .20em; text-transform: uppercase;
+    color: #6E90C4; font-weight: 600; margin-bottom: 34px;
+  }
+  /* the whole article in one line */
+  .hero {
+    font-family: Consolas, "Cascadia Mono", "SF Mono", monospace;
+    font-size: 104px; font-weight: 700; letter-spacing: -0.015em;
+    line-height: 1; white-space: nowrap; margin-bottom: 30px;
+  }
+  .key { color: #E6EDF3; }
+  .from { color: #58A6FF; }
+  .arrow { color: #6E7681; margin: 0 22px; }
+  .to { color: #F0883E; }
+  .sub {
+    font-size: 30px; color: #9BA6B2; font-weight: 400; margin-bottom: 58px;
+  }
+  .sub b { color: #E6EDF3; font-weight: 600; }
+  .card {
+    width: 1080px; background: #10141B;
+    border: 1px solid #222B36; border-radius: 12px;
+    box-shadow: 0 28px 70px rgba(0,0,0,.55);
+    overflow: hidden;
+  }
+  .bar {
+    display: flex; align-items: center; gap: 9px;
+    padding: 13px 18px; background: #161B23; border-bottom: 1px solid #222B36;
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .bar span {
+    margin-left: 12px; font-family: Consolas, monospace;
+    font-size: 15px; color: #7D8590;
+  }
+  .body {
+    padding: 26px 32px 30px;
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 22px; line-height: 1.62;
+  }
+  .prompt { color: #6E7681; }
+  .cmd { color: #C9D5E1; }
+  .brk { color: #FF7B72; font-weight: 700; }
+  .ep { color: #E6EDF3; }
+  .ind { padding-left: 46px; }
+  .tarrow { color: #6E7681; }
+  .dim { color: #7D8590; }
+  .fail { color: #FF7B72; }
+  .foot {
+    position: absolute; bottom: 46px; left: 0; right: 0;
+    text-align: center; font-family: Consolas, monospace;
+    font-size: 20px; color: #56606E; letter-spacing: .06em;
+  }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="grid"></div>
+  <div class="wrap">
+    <div class="eyebrow">Schema-Watch</div>
+
+    <div class="hero">
+      <span class="key">id:</span>
+      <span class="from">string</span><span class="arrow">&#8594;</span><span class="to">number</span>
+    </div>
+
+    <div class="sub">Valid JSON. <b>200 OK.</b> Nothing threw. Your frontend broke anyway.</div>
+
+    <div class="card">
+      <div class="bar">
+        <div class="dot" style="background:#FF5F57"></div>
+        <div class="dot" style="background:#FEBC2E"></div>
+        <div class="dot" style="background:#28C840"></div>
+        <span>schema-watch check</span>
+      </div>
+      <div class="body">
+        <div><span class="prompt">$</span> <span class="cmd">npx schema-watch check --baseline baseline.json</span></div>
+        <div>&nbsp;</div>
+        <div><span class="brk">BREAKING</span>&nbsp;&nbsp;<span class="ep">GET /api/users/:id (response)</span></div>
+        <div class="ind"><span class="key">id:</span> <span class="from">string</span> <span class="tarrow">&#8594;</span> <span class="to">number</span></div>
+        <div class="ind"><span class="dim">email was removed (was string)</span></div>
+        <div>&nbsp;</div>
+        <div class="fail">Breaking API contract changes detected.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">npx schema-watch&nbsp;&nbsp;&nbsp;&#183;&nbsp;&nbsp;&nbsp;exit code 1, so the build fails instead of your users</div>
+</body>
+</html>
