@@ -159,8 +159,25 @@
         "ok": {
           "required": true,
           "schema": {
+            "kind": "object",
+            "nullable": false,
+            "properties": {
+              "status": {
+                "required": true,
+                "schema": {
+                  "kind": "primitive",
+                  "type": "string",
+                  "nullable": false
+                }
+              }
+            }
+          }
+        },
+        "uptimeSeconds": {
+          "required": true,
+          "schema": {
             "kind": "primitive",
-            "type": "boolean",
+            "type": "number",
             "nullable": false
           }
         }
