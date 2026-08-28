@@ -21,7 +21,7 @@
     "bundle": "node scripts/bundle-dashboard.mjs",
     "prepack": "npm run build && npm run bundle",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx --test src/ci/compare.test.ts src/context/brief.test.ts"
+    "test": "tsx --test src/ci/compare.test.ts src/context/brief.test.ts src/telemetry/telemetry.test.ts"
   },
   "dependencies": {
     "@schema-watch/core": "^0.1.0",

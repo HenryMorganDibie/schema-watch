@@ -15,31 +15,109 @@ import { startApiServer } from "./api/server.js";
 import { buildContextBrief } from "./context/brief.js";
 import { renderContextBriefMarkdown } from "./context/markdown.js";
 import { writeContextFile, upsertFencedBlock } from "./context/write.js";
+import { firstRunNotice, hasDecided, linkInstallation, record, setTelemetryEnabled, telemetryStatus } from "./telemetry/index.js";
 
 const CONTEXT_START_MARKER = "<!-- schema-watch-context:start -->";
 const CONTEXT_END_MARKER = "<!-- schema-watch-context:end -->";
+
+const CLI_VERSION: string = (() => {
+  try {
+    const here = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+    return JSON.parse(readFileSync(path.join(here, "..", "package.json"), "utf8")).version ?? "unknown";
+  } catch {
+    return "unknown";
+  }
+})();
 
 const [, , command, ...rest] = process.argv;
 
 switch (command) {
   case "init":
     runInit(rest);
+    record("cli_init", CLI_VERSION);
     break;
   case "start":
+    record("cli_start", CLI_VERSION);
     runStart();
     break;
   case "export":
     runExport(rest);
+    record("cli_export", CLI_VERSION);
     break;
   case "check":
+    record("cli_check", CLI_VERSION);
     await runCheck(rest);
     break;
   case "context":
     runContext(rest);
+    record("cli_context", CLI_VERSION);
+    break;
+  case "telemetry":
+    await runTelemetry(rest);
     break;
   default:
     printHelp();
     process.exit(command ? 1 : 0);
+}
+
+/**
+ * Explicit commands rather than an interactive prompt. A prompt that appears
+ * mid-workflow pressures people into yes, and cannot be answered at all when
+ * the CLI runs non-interactively.
+ */
+async function runTelemetry(args: string[]): Promise<void> {
+  const action = args[0];
+  if (action === "enable") {
+    setTelemetryEnabled(true);
+    console.log("Telemetry enabled. Thank you: this is the only way I can tell the tool is being used by a person.");
+    console.log("Turn it off any time with `schema-watch telemetry disable`.");
+    return;
+  }
+  if (action === "disable") {
+    setTelemetryEnabled(false);
+    console.log("Telemetry disabled. Nothing further will be sent.");
+    return;
+  }
+  if (action === "link") {
+    const keyIndex = args.indexOf("--api-key");
+    const apiKey = keyIndex !== -1 ? args[keyIndex + 1] : process.env.SCHEMA_WATCH_API_KEY;
+    if (!apiKey) {
+      console.error("Pass --api-key <key>, or set SCHEMA_WATCH_API_KEY.");
+      console.error("Linking is optional. Telemetry works fully without a Cloud account.");
+      process.exit(1);
+    }
+    const result = await linkInstallation(apiKey);
+    if (!result.ok) {
+      console.error(`Could not link: ${result.reason}`);
+      process.exit(1);
+    }
+    console.log("Installation linked.");
+    console.log("This machine and your CI runner now count as one developer rather than two installations.");
+    return;
+  }
+
+  const status = telemetryStatus();
+  console.log(`Telemetry: ${status.enabled ? "enabled" : "disabled"}`);
+  if (status.suppressedBecause && status.enabled) {
+    console.log(`Currently not sending: ${status.suppressedBecause}.`);
+  }
+  console.log("");
+  console.log("When enabled, a command sends exactly this and nothing else:");
+  console.log("");
+  console.log(`  installId   ${status.installId}`);
+  console.log("  event       the command name, e.g. cli_check");
+  console.log(`  version     ${CLI_VERSION}`);
+  console.log(`  nodeMajor   ${process.versions.node.split(".")[0]}`);
+  console.log(`  platform    ${process.platform}`);
+  console.log("");
+  console.log("Never sent: your target URL, endpoint paths, schemas, payloads, headers,");
+  console.log("file paths, project names, or anything derived from captured traffic.");
+  console.log("");
+  console.log("In CI, nothing is sent unless you set SCHEMA_WATCH_TELEMETRY=1 explicitly;");
+  console.log("CI runs are counted separately from people, never merged with them.");
+  console.log("DO_NOT_TRACK=1 or SCHEMA_WATCH_TELEMETRY=0 disables it everywhere.");
+  console.log("");
+  console.log("  schema-watch telemetry enable | disable");
 }
 
 function printHelp(): void {
@@ -55,6 +133,10 @@ Usage:
       --frontend-src <dir>            Scan this directory for files referencing changed endpoints
       --sarif <file>                  Also write SARIF 2.1.0 for GitHub code scanning
       --project <id> --api-key <key>  Use the cloud gate instead of --baseline
+  schema-watch telemetry [status|enable|disable]
+      Anonymous usage telemetry. OFF unless you turn it on.
+      link --api-key <key>            Optionally count this machine and your CI
+                                       runner as one developer, not two.
   schema-watch context [options]      Write an AI context brief: captured endpoints, recent
                                        breaking changes, and frontend cross-references.
       --out <file>                    Where to write it (default: CONTEXT.md)
@@ -104,6 +186,10 @@ ${target}, then run:
 
   schema-watch start
 `);
+
+  // Shown once, and only to someone who has never answered either way. Nobody
+  // should find out this feature exists by reading a changelog later.
+  if (!hasDecided()) console.log(firstRunNotice());
 }
 
 function runStart(): void {

@@ -113,6 +113,9 @@ export const RATE_LIMITS = {
   forgotByIp: { name: "forgot-ip", limit: 10, windowMs: HOUR },
   resetByIp: { name: "reset-ip", limit: 10, windowMs: HOUR },
   resendByUser: { name: "resend-user", limit: 3, windowMs: HOUR },
+  // Generous: a developer running the CLI in a loop is normal usage, and
+  // this endpoint grants nothing. Bounded only so it cannot fill the table.
+  telemetryByIp: { name: "telemetry-ip", limit: 120, windowMs: HOUR },
   // Analytics is cheap to call and unauthenticated, so it needs a ceiling;
   // generous enough that a real visitor browsing normally never hits it.
   analyticsByIp: { name: "analytics-ip", limit: 300, windowMs: HOUR },

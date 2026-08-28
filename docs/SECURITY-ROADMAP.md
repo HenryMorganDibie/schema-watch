@@ -29,8 +29,11 @@ Ordered by what actually reduces risk first, not by effort.
 - A new Cloud endpoint is not done until its tenant isolation is tested.
   "User A cannot reach User B's data" is a test, not an assumption.
 - Never claim a security property in docs without a verification to point at.
-- The local product stays unmetered and network-free. Anything that would make
-  the OSS tool phone home needs a much better reason than analytics.
+- The local product stays unmetered, and silent by default. Opt-in telemetry
+  (added 2026-08-26) is the one exception, and it holds the line: off unless
+  switched on, no prompt that defaults to yes, no API data of any kind, and
+  `DO_NOT_TRACK` honoured. Anything that would make the OSS tool phone home
+  *without being asked* still needs a much better reason than analytics.
 
 ## Deliberately not doing yet
 

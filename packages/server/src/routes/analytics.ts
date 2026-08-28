@@ -7,6 +7,7 @@ import {
 } from "../lib/analytics.js";
 import { analyticsSummary, type RangeDays } from "../lib/analyticsQueries.js";
 import { githubTraffic } from "../lib/githubTraffic.js";
+import { adoptionSummary } from "../lib/adoptionQueries.js";
 import { npmDownloads } from "../lib/npmDownloads.js";
 import { retentionCohorts } from "../lib/retention.js";
 import { RATE_LIMITS, clientIp, enforceRateLimit } from "../lib/rateLimit.js";
@@ -103,6 +104,15 @@ export async function analyticsAdminRoutes(app: FastifyInstance): Promise<void> 
    * Also its own request. Retention scans further back than the summary
    * window does, so it has no business making the headline numbers wait.
    */
+  /**
+   * The adoption funnel. Separate from /summary because it mixes a third-party
+   * number (npm) with first-party telemetry, and those must stay labelled.
+   */
+  app.get("/adoption", async (_req, reply) => {
+    const npm = await npmDownloads();
+    return reply.send(await adoptionSummary(npm.available ? npm.lastMonth : null));
+  });
+
   app.get("/npm", async (_req, reply) => {
     return reply.send(await npmDownloads());
   });

@@ -22,7 +22,8 @@ Exit code `1`, so your build fails instead of your frontend.
 
 ## Try it in 30 seconds
 
-Needs Node 22.5 or newer. No account, no signup, nothing to configure.
+Needs Node 22.5 or newer. No account, no signup, nothing to configure, and
+nothing leaves your machine.
 
 ```bash
 npx schema-watch init --target http://localhost:3001   # your backend
@@ -133,8 +134,10 @@ coordinate, enforce and manage them across repositories and pull requests.**
 - `export` and `check` in your own CI, including PR comments, check runs and SARIF
 - Unlimited personal and commercial use
 
-Everything above runs with no account and no network. It is the whole
-detection engine, and it stays free.
+Everything above runs with no account, and makes no network calls unless you
+ask it to: cloud `sync`, the cloud CI gate, and
+[opt-in telemetry](./docs/PRIVACY.md#opt-in-cli-telemetry) are each off until
+you switch them on. It is the whole detection engine, and it stays free.
 
 ### Schema-Watch Cloud
 

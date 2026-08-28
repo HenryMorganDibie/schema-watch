@@ -15,8 +15,9 @@ npx schema-watch start
 Point your frontend at the proxy, use your app, and open the dashboard. Every
 endpoint you touch is now under contract.
 
-**No account, no signup, no network.** The proxy, the database and the
-dashboard all run on your machine. Requires **Node 22.5 or newer** (it stores
+**No account, no signup, nothing leaves your machine.** The proxy, the
+database and the dashboard all run locally, and the CLI makes no network calls
+unless you turn one on. Requires **Node 22.5 or newer** (it stores
 captures with the built-in `node:sqlite`).
 
 ## The CI gate
@@ -65,7 +66,11 @@ Run `npx schema-watch --help` for the full flags.
 
 The proxy, the database and the dashboard all run on your machine. Nothing is
 uploaded and no account is needed. `check --baseline` is a local file
-comparison. The hosted service at
+comparison.
+
+Anonymous usage telemetry is **off by default**. `schema-watch telemetry status`
+shows exactly what it would send, and `enable` turns it on if you want to tell
+me the tool is being used by a person rather than a CI runner. The hosted service at
 [schema-watch](https://github.com/HenryMorganDibie/schema-watch) is optional and
 exists for teams that want a shared baseline across branches.
 

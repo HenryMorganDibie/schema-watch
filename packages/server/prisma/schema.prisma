@@ -137,6 +137,7 @@ model Team {
   members              TeamMember[]
   projects             Project[]
   apiKeys              ApiKey[]
+  telemetryInstallations TelemetryInstallation[]
 }
 
 model TeamMember {
@@ -297,4 +298,45 @@ model IntegrationDelivery {
   createdAt     DateTime       @default(now())
 
   @@index([integrationId, createdAt])
+}
+
+/// One row per machine that has opted into telemetry. An installation is a
+/// machine, not a person: the same developer's laptop and CI runner are two
+/// rows unless they explicitly link both to a project.
+model TelemetryInstallation {
+  id             String   @id @default(cuid())
+  installId      String   @unique
+  firstSeenAt    DateTime @default(now())
+  lastSeenAt     DateTime @default(now())
+  version        String?
+  platform       String?
+  nodeMajor      Int?
+  /// "local" or "ci". Never conflate the two: a pipeline is not a person.
+  environment    String   @default("local")
+  /// Set only when the developer ran `telemetry link`. Null stays null: no
+  /// attempt is ever made to infer that two anonymous machines are one person.
+  /// Scoped to a team because that is what an API key belongs to, and for a
+  /// solo developer a team is one person.
+  teamId         String?
+  team           Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  events         TelemetryEvent[]
+
+  @@index([lastSeenAt])
+  @@index([environment])
+  @@index([teamId])
+}
+
+model TelemetryEvent {
+  id             String   @id @default(cuid())
+  installId      String
+  installation   TelemetryInstallation @relation(fields: [installId], references: [installId], onDelete: Cascade)
+  event          String
+  occurredAt     DateTime @default(now())
+  version        String?
+  environment    String   @default("local")
+
+  @@index([event, occurredAt])
+  @@index([occurredAt])
+  @@index([installId])
 }

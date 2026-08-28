@@ -4,16 +4,64 @@ Schema-Watch collects minimal product telemetry, only from Schema-Watch Cloud,
 to understand whether the product is being used. This page states exactly what
 that is.
 
-## The local tool sends nothing
+## The local tool sends nothing unless you turn it on
 
-The proxy, dashboard, CLI, and MCP server run entirely on your machine and make
-**no network calls of their own**. Nothing about your traffic, your code, or
-your usage of the local tool reaches us. That is why the operator dashboard
-reports MCP usage as *unavailable* rather than as a number: there is no
-mechanism by which it could know.
+The proxy, dashboard, CLI and MCP server run entirely on your machine. By
+default they make **no network calls of their own**, and nothing about your
+traffic, your code or your usage reaches us.
 
-The agent reaches the network only if you explicitly enable `sync` with an API
-key, or run `schema-watch check` against the cloud gate.
+There are exactly three ways the local tool can reach the network, and all
+three are things you switch on yourself:
+
+1. **`sync`**, enabled in `schema-watch.config.json` with an API key.
+2. **`schema-watch check`** run against the cloud gate with `--project` and
+   `--api-key`, rather than the default local `--baseline`.
+3. **Opt-in telemetry**, described below, off until you run
+   `schema-watch telemetry enable`.
+
+The MCP server has no network path at all, in any configuration. That is why
+the operator dashboard reports MCP usage as *unavailable* rather than as a
+number: there is no mechanism by which it could know.
+
+## Opt-in CLI telemetry
+
+npm reports downloads, but a download is not a developer: CI runners, mirrors,
+Docker builds and registry caches all install packages. Telemetry exists to
+answer whether a person is actually running this, and nothing more.
+
+It is **off by default**. There is no pre-ticked box and no prompt that
+defaults to yes. Enable it with `schema-watch telemetry enable`, see exactly
+what it would send with `schema-watch telemetry status`, and turn it off again
+with `schema-watch telemetry disable`.
+
+When enabled, one request per command carries exactly:
+
+| Field | Example | Why |
+| --- | --- | --- |
+| `installId` | a random UUID | Tells one machine from another. Not derived from hostname, MAC address or username. |
+| `event` | `cli_check` | Which command ran. |
+| `version` | `0.1.0` | Which release is in use. |
+| `nodeMajor` | `22` | Whether the Node floor can move. |
+| `platform` | `darwin` | Which platforms need testing. |
+| `environment` | `local` or `ci` | So a pipeline is never counted as a person. |
+
+Never sent: your target URL, endpoint paths, schemas, payloads, headers, file
+paths, project names, directory names, or anything derived from captured
+traffic. IP addresses are not recorded on these events.
+
+**In CI, nothing is sent** unless you set `SCHEMA_WATCH_TELEMETRY=1` there
+yourself. `DO_NOT_TRACK=1` disables it everywhere, as does
+`SCHEMA_WATCH_TELEMETRY=0`.
+
+Optionally, `schema-watch telemetry link --api-key <key>` associates an
+installation with your Cloud account, so your laptop and your CI runner count
+as one developer instead of two installations. Linking is never required:
+telemetry works fully without a Cloud account, and no attempt is made to infer
+that two anonymous machines belong to the same person.
+
+The settings live in `~/.schema-watch/telemetry.json`, in your home directory
+rather than the project, so the choice is yours and is never committed to a
+repository or made on a teammate's behalf.
 
 ## Never collected
 

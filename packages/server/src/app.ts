@@ -4,6 +4,7 @@ import { adminRoutes } from "./routes/admin.js";
 import { analyticsAdminRoutes, analyticsIngestRoutes } from "./routes/analytics.js";
 import { authRoutes } from "./routes/auth.js";
 import { badgeRoutes } from "./routes/badge.js";
+import { telemetryRoutes } from "./routes/telemetry.js";
 import { billingRoutes } from "./routes/billing.js";
 import { ciRoutes } from "./routes/ci.js";
 import { integrationRoutes } from "./routes/integrations.js";
@@ -64,6 +65,7 @@ export function buildApp() {
   app.register(integrationRoutes, { prefix: "/api" });
   app.register(billingRoutes, { prefix: "/api/billing" });
   app.register(badgeRoutes, { prefix: "/api/badge" });
+  app.register(telemetryRoutes, { prefix: "/api/telemetry" });
 
   app.get("/api/health", async () => ({ ok: true }));
 
