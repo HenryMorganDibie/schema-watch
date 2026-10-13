@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 import { Logo } from "@schema-watch/ui";
 import { track } from "../lib/analytics";
 import { api, ApiError } from "../lib/api";

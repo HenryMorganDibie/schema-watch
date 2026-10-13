@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { Logo } from "@schema-watch/ui";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";

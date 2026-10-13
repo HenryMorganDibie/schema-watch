@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router";
 import { AppShell } from "./components/AppShell";
 import { trackArrival, track } from "./lib/analytics";
 import { useAuth } from "./lib/auth";

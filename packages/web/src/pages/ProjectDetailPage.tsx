@@ -1,7 +1,7 @@
 import { ChangeCard, DiffViewer, EndpointRow, type ContractChangeView } from "@schema-watch/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router";
 import { Integrations } from "../components/Integrations";
 import { api, API_BASE } from "../lib/api";
 

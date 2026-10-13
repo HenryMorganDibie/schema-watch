@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { Logo } from "@schema-watch/ui";
 import { api } from "../lib/api";
 

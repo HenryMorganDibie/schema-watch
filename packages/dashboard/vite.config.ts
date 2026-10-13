@@ -8,8 +8,8 @@ export default defineConfig({
     alias: {
       // Consume the shared UI package as source so it needs no build step and
       // stays hot-reloadable while developing either app.
-      "@schema-watch/ui/styles.css": path.resolve(__dirname, "../ui/src/styles/index.css"),
-      "@schema-watch/ui": path.resolve(__dirname, "../ui/src/index.ts"),
+      "@schema-watch/ui/styles.css": path.resolve(import.meta.dirname, "../ui/src/styles/index.css"),
+      "@schema-watch/ui": path.resolve(import.meta.dirname, "../ui/src/index.ts"),
     },
   },
   server: {

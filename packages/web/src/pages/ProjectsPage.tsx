@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useActiveTeam } from "../lib/useActiveTeam";

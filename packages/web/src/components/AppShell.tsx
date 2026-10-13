@@ -1,5 +1,5 @@
 import { Logo } from "@schema-watch/ui";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet } from "react-router";
 import { useAuth } from "../lib/auth";
 import { VerifyBanner } from "./VerifyBanner";
 import { useActiveTeam } from "../lib/useActiveTeam";

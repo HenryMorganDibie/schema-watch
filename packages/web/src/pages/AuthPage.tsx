@@ -1,6 +1,6 @@
 import { Logo } from "@schema-watch/ui";
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import { track } from "../lib/analytics";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
