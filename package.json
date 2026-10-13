@@ -7,8 +7,10 @@
   ],
   "scripts": {
     "demo": "node examples/demo/run-demo.mjs",
-    "build": "npm run build --workspaces --if-present && npm run bundle --workspace packages/agent",
-    "typecheck": "npm run typecheck --workspaces --if-present",
+    "deps:build": "npm run build --workspace packages/core && npm run build --workspace packages/agent && npm run db:generate --workspace packages/server",
+    "build": "npm run deps:build && npm run build --workspaces --if-present && npm run bundle --workspace packages/agent",
+    "typecheck": "npm run deps:build && npm run typecheck --workspaces --if-present",
+    "test": "npm run deps:build && npm test --workspaces --if-present",
     "dev:agent": "npm run dev --workspace packages/agent",
     "dev:dashboard": "npm run dev --workspace packages/dashboard",
     "dev:server": "npm run dev --workspace packages/server",

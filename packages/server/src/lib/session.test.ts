@@ -1,3 +1,4 @@
+import "./testEnv.js";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { hashRefreshToken, userAgentLabel } from "./session.js";
